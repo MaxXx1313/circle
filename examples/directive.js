@@ -62,7 +62,7 @@ return {
       ctrl.draw = null;
       ctrl.nodes = {};
 
-      $element.css({height: size, width:size});
+      $element.css({height: size, width:size, position: 'relative'});
 
       // create svg drawing
       ctrl.draw = SVG('drawing');
@@ -76,19 +76,23 @@ return {
       /**
        *
        */
-      $element.on('mouseover', function(e){
-        if(/*e.target.tagName.toLowerCase() === 'circle' && */ e.target._svg){
-          // console.log('mouseover', e.target._svg.id);
-          showInfo(e.target._svg);
-        }
-      });
+      if( $().tooltip ){
+        // show tooltip on hover
 
-      $element.on('mouseout', function(e){
-        // if(e.target === e.currentTarget){
-        if(/*e.target.tagName.toLowerCase() === 'circle' && */ e.target._svg){
-          $('#bc_popup_anchor').tooltip('destroy');
-        }
-      });
+        $element.on('mouseover', function(e){
+          if(/*e.target.tagName.toLowerCase() === 'circle' && */ e.target._svg){
+            // console.log('mouseover', e.target._svg.id);
+            showInfo(e.target._svg);
+          }
+        });
+
+        $element.on('mouseout', function(e){
+          // if(e.target === e.currentTarget){
+          if(/*e.target.tagName.toLowerCase() === 'circle' && */ e.target._svg){
+            $('#bc_popup_anchor').tooltip('destroy');
+          }
+        });
+      }
 
       function showInfo(node){
           // console.log('hovered:', node.id);
@@ -96,7 +100,7 @@ return {
           var n = Object.keys(node.loan).length;
           var text = '$&nbsp;'+node.balance + '<br>' + 'Claims:&nbsp;' +n ;
 
-          $('#bc_popup_anchor').css({height:0, width:0, position:'absolute', left: node.pos.x+item_r, top: node.pos.y-item_r })
+          $('#bc_popup_anchor').css({height:0, width:0, position:'absolute', left: node.pos.x, top: node.pos.y-item_r })
           // .tooltip('destroy')
             .tooltip({title:text, html:true, animation:false}).tooltip('show');
           // $('svg circle:first').tooltip({title:'test'}).tooltip('show')

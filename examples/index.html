@@ -24,7 +24,7 @@
     <script src="//cdnjs.cloudflare.com/ajax/libs/svg.js/2.3.4/svg.min.js"></script>
 
     <script src="//ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
-    <script src="//maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
+    <script src="//maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script> <!-- optional: tooltip -->
     <script src="//cdnjs.cloudflare.com/ajax/libs/angular.js/1.4.7/angular.min.js"></script>
 
 
@@ -38,19 +38,23 @@
         ctrl.heading = 'Relation cirle directive';
 
         /**
-         *
+         * @property {string|number} id
+         * @property {string|number} [balance] = tooltip text
          */
         var dataExample = [
           {
             id: 1,
+            balance: 100,
             loan:{ 2: {val:500} }
           },
           {
             id: 2,
+            balance: 100,
             loan: { 3: {val:300} }
           },
           {
             id: 3,
+            balance: 100,
             loan: { 1: {val:200} }
           }
         ];
