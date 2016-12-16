@@ -156,6 +156,7 @@ return {
 
         Object.keys(dataAssoc).forEach(function(id){
           var node = dataAssoc[id];
+          node.loan = node.loan || {};
 
 
           // loan

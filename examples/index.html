@@ -38,8 +38,9 @@
         ctrl.heading = 'Relation cirle directive';
 
         /**
-         * @property {string|number} id
+         * @property {string|number} id - nodeID. This is a required field!
          * @property {string|number} [balance] = tooltip text
+         * @property {Object<Object<val:number>>} [loan] key-value pairs of loan information nodeID=>{ val:number }
          */
         var dataExample = [
           {
