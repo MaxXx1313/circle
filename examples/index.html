@@ -12,6 +12,7 @@
   </head>
 
   <body ng-controller="mainCtrl as ctrl">
+    <h1>{{::ctrl.heading}}</h1>
 
     <blockchain-pie data="ctrl.nodes"></blockchain-pie>
 
@@ -33,6 +34,8 @@
       // angular.module('MyBlockchain', [])
       .controller('mainCtrl', function(){
         var ctrl = this;
+
+        ctrl.heading = 'Pie';
 
         /**
          *
@@ -57,10 +60,11 @@
          */
         ctrl.nodes = dataExample;
 
+        var i=4; // counter for random value generation
+
         /**
          *
          */
-        var i=4;
         ctrl.addNode = function(){
           ctrl.nodes.push( randomNode(i) );
           i++;
