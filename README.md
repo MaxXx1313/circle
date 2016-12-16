@@ -11,4 +11,4 @@ Issues
 
 * Supports only one element on a page
 * One side of line is not animated properly when items are added too fast
-* Sometime can left unused lines
+* Sometimes can left unused lines
