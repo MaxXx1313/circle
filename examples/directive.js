@@ -1,10 +1,10 @@
-angular.module('MyBlockchain', [])
+angular.module('relationCircle', [])
 
 // scope:
 // = is for two-way binding
 // @ simply reads the value (one-way binding)
 // & is used to bind functions
-.directive('blockchainPie', function(){
+.directive('relationCircle', function(){
 
 var dataExample = [
   {

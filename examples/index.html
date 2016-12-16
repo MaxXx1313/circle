@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Pie</title>
+    <title>Relation cirle directive</title>
 
     <!-- Page styles -->
     <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
@@ -14,7 +14,7 @@
   <body ng-controller="mainCtrl as ctrl">
     <h1>{{::ctrl.heading}}</h1>
 
-    <blockchain-pie data="ctrl.nodes"></blockchain-pie>
+    <relation-circle data="ctrl.nodes"></relation-circle>
 
     <button ng-click="ctrl.addNode()">Add node</button>
     <button ng-click="ctrl.clear()">Clear</button>
@@ -28,14 +28,14 @@
     <script src="//cdnjs.cloudflare.com/ajax/libs/angular.js/1.4.7/angular.min.js"></script>
 
 
-    <script src="../directive.js"></script>
+    <script src="directive.js"></script>
     <script>
-      angular.module('app', ['MyBlockchain'])
+      angular.module('app', ['relationCircle'])
       // angular.module('MyBlockchain', [])
       .controller('mainCtrl', function(){
         var ctrl = this;
 
-        ctrl.heading = 'Pie';
+        ctrl.heading = 'Relation cirle directive';
 
         /**
          *
