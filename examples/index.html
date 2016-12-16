@@ -91,11 +91,12 @@
          */
         function randomNode(id){
           var loanValue = parseInt(Math.random()*500);
-          var loanTarget = parseInt(Math.random() * id); // assume that all lower-valued ids are exists already
+          var ids = Object.keys(ctrl.nodes);
+          var loanTarget = ctrl.nodes[parseInt(Math.random() * ids.length)];
 
           var node = {id: id, loan:{}};
-          if(loanTarget !== id){ // will happen only when we generate first node
-           node.loan[loanTarget] = {val:loanValue};
+          if(loanTarget && loanTarget.id !== id){
+           node.loan[loanTarget.id] = {val:loanValue};
           }
           return node;
         }

@@ -156,12 +156,11 @@ return {
 
         Object.keys(dataAssoc).forEach(function(id){
           var node = dataAssoc[id];
-          node.loan = node.loan || {};
 
 
           // loan
           var oldLoan = ctrl.nodes[id] ? Object.keys(ctrl.nodes[id].loan) : [];
-          var newLoan = Object.keys(node.loan);
+          var newLoan = Object.keys(node.loan || {});
 
           var diff = _diff(oldLoan, newLoan);
 
@@ -374,8 +373,11 @@ return {
             var me = ctrl.nodes[id];
 
             Object.keys(me.loan).forEach(function(tid){
-              var target = ctrl.nodes[tid] || targetCenter;
-
+              var target = ctrl.nodes[tid] /*|| targetCenter*/;
+              if(!target){
+                console.warn('Loan target not found:', tid);
+                return;
+              }
 
               var tp = {
                 x: target.pos.x,
