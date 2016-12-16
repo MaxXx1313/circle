@@ -7,9 +7,7 @@
     <title>Pie</title>
 
     <!-- Page styles -->
-
     <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
-    <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/font-awesome/4.4.0/css/font-awesome.min.css">
 
   </head>
 
@@ -29,7 +27,7 @@
     <script src="//cdnjs.cloudflare.com/ajax/libs/angular.js/1.4.7/angular.min.js"></script>
 
 
-    <script src="directive.js"></script>
+    <script src="../directive.js"></script>
     <script>
       angular.module('app', ['MyBlockchain'])
       // angular.module('MyBlockchain', [])
@@ -64,16 +62,8 @@
          */
         var i=4;
         ctrl.addNode = function(){
-          var loanValue = parseInt(Math.random()*500);
-          var loanTarget = parseInt(Math.random()*i);
-
-          var loan = {};
-          if(loanTarget>0){
-           loan[loanTarget] = {val:loanValue};
-          }
-          ctrl.nodes.push({id:i, loan:loan});
+          ctrl.nodes.push( randomNode(i) );
           i++;
-          console.log(dataExample);
         }
 
         /**
@@ -81,7 +71,24 @@
          */
         ctrl.clear = function(){
           ctrl.nodes = [];
-          i=0;
+          i = 0;
+        }
+
+        /**
+         * Generate random node. just for a demo
+         * @param {number} id - id for a new node
+         *
+         * @more https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math/random
+         */
+        function randomNode(id){
+          var loanValue = parseInt(Math.random()*500);
+          var loanTarget = parseInt(Math.random() * id); // assume that all lower-valued ids are exists already
+
+          var node = {id: id, loan:{}};
+          if(loanTarget !== id){ // will happen only when we generate first node
+           node.loan[loanTarget] = {val:loanValue};
+          }
+          return node;
         }
 
 
