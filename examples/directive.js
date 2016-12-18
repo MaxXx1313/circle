@@ -227,7 +227,8 @@ return {
 
         // process links
         links.forEach(function(link){
-          // check for dumplication
+
+          // check for duplication
           var duplicationlinkItem = (newLinksIndex[link.from] || {})[link.to] || null;
           if(duplicationlinkItem){
             console.warn('Duplicated link:', link);
@@ -278,6 +279,7 @@ return {
         // nodes
         Object.keys(ctrl.nodes).forEach(function(id){
           if(!ctrl.nodes[id]._svg){
+            // seems like it's a new element
             addNode(ctrl.nodes[id]);
           }
         });
