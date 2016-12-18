@@ -55,7 +55,7 @@ return {
        * Link to main svg object
        * @type {SVG}
        */
-      ctrl._svg = null;
+      ctrl.svg = null;
 
       /**
        * @typedef {object} NodeInfo
@@ -111,8 +111,10 @@ return {
         $element.css({height: size, width:size, position: 'relative'});
 
         // create main svg drawing
-        ctrl._svg = SVG('drawing'+ctrl._elementIdNum);
-        var bgnd_circle = ctrl._svg.circle(2*bgnd_c_radius).attr({
+        ctrl.svg = SVG('drawing'+ctrl._elementIdNum);
+
+        // background circle
+        ctrl._svg = ctrl.svg.circle(2*bgnd_c_radius).attr({
             'fill-opacity': 0,
             'stroke-width': bg_border_w,
             'stroke':'#000'
@@ -124,9 +126,9 @@ return {
           // show tooltip on hover
 
           $element.on('mouseover', function(e){
-            console.log('mouseover', e.target);
+            console.log('mouseover', e.target, e);
             if(e.target._svg_original){
-              showTooltip(e.target._svg_original);
+              showTooltip(e.target._svg_original, e.offsetX, e.offsetY);
             }
           });
 
@@ -142,7 +144,7 @@ return {
       /**
        * @param {SVG} node
        */
-      function showTooltip(node){
+      function showTooltip(node, x, y){
           console.log('showTooltip', node);
           var text='';
 
@@ -160,10 +162,10 @@ return {
           }else{
             // assume it's a link
             text = 'From&nbsp;{from}&nbsp;to&nbsp;{to}'.replace('{from}', node.from).replace('{to}', node.to)
-                 + '<br>Value:&nbsp;' + node.value;
+                 + '<br>Value:&nbsp;' + (node.value || 'N/A');
           }
 
-          $element.find('.bc_popup_anchor').css({height:0, width:0, position:'absolute', left: node.pos.x, top: node.pos.y-item_r })
+          $element.find('.bc_popup_anchor').css({height:0, width:0, position:'absolute', left: x || node.pos.x, top: (y || node.pos.y)-item_r })
           // .tooltip('destroy')
             .tooltip({title:text, html:true, animation:false}).tooltip('show');
           // $('svg circle:first').tooltip({title:'test'}).tooltip('show')
@@ -363,11 +365,16 @@ return {
             y: target.pos.y,
           };
 
-          // me.loan[tid].svg = ctrl._svg.path(['M', me.pos.x, me.pos.y, 'L', target.pos.x, target.pos.y].join(' '))
-          // link._svg = ctrl._svg.polyline([[sp.x, sp.y] /*, [targetCenter.pos.x, targetCenter.pos.y]*/, [tp.x, tp.y]])
-          link._svg = ctrl._svg.line(0,0, bgnd_c_radius, 0)
-          // link._svg = ctrl._svg.line(sp.x, sp.y, tp.x, tp.y)
+          // me.loan[tid].svg = ctrl.svg.path(['M', me.pos.x, me.pos.y, 'L', target.pos.x, target.pos.y].join(' '))
+          // link._svg = ctrl.svg.polyline([[sp.x, sp.y] /*, [targetCenter.pos.x, targetCenter.pos.y]*/, [tp.x, tp.y]])
+
+          // we use css transitions to place this lineproperly
+          link._svg = ctrl.svg.line(0,0, bgnd_c_radius, 0)
+          // link._svg = ctrl.svg.rect(bgnd_c_radius, 5)
+          // link._svg = ctrl.svg.line(sp.x, sp.y, tp.x, tp.y)
             .back()
+            // .backward()
+            // .after( $element.children('circle:last').get(0) )
             .attr({
               // 'fill-opacity': 0.2,
               'stroke-opacity': 0.7,
@@ -386,6 +393,7 @@ return {
             //   me.loan[to].svg.animate().attr({'stroke': me.color});
             // }
 
+          ctrl._svg.back();
           // setTimeout(removeLink.bind(this, from, to), 2000); // DEBUG
 
           // link back to object
@@ -457,7 +465,7 @@ return {
         me.pos = polar(ids.indexOf(""+node.id), ids.length);
 
         // me.color = randomColor();
-        me._svg = ctrl._svg.circle(2*item_r0).attr({
+        me._svg = ctrl.svg.circle(2*item_r0).attr({
             'stroke-width': 1, //item_border_w,
             // 'stroke':'#F33'
             'stroke': me.color,
