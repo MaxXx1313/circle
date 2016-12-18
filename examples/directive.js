@@ -20,8 +20,9 @@ return {
     scope: {
       size:'=',               // {number} size in px. default: 500
       data:'=',               // {} - data. see {@link dataExample}
-      filter:'=',             // {string} nodeId - show only selected nodes and it's relations
-      filterDirection:'='     // {'one'|'two'}
+      // filter:'=',             // {string} nodeId - show only selected nodes and it's relations
+      // filterDirection:'='     // {'one'|'two'}
+      autoCleanUp:'='     // {boolean} default:true
     },
     template: '<div id="drawing">'
               +'<div id="bc_popup_anchor"></div>'
@@ -30,6 +31,7 @@ return {
     controller: function relationCircleController($scope, $element, $attrs, $transclude, $rootScope){
       var ctrl = this;
       var size = $scope.size = $scope.size || 500;
+      var autoCleanUp = typeof $scope.autoCleanUp !== "undefined" ? $scope.autoCleanUp : true;
       // var filter = $scope.filter || null;
 
 
@@ -205,6 +207,7 @@ return {
         });
 
 
+        // var newNodes = {};
         var newLinks = [];
         var newLinksIndex = {};
 
@@ -263,17 +266,17 @@ return {
           var linkItem = (ctrl._linksIndex[link.from] || {})[link.to] || {};
           Object.assign(linkItem, link); // copy all properties. don't erase already existed
 
-          // save
           _addToIndex(linkItem, newLinksIndex);
           newLinks.push(linkItem);
 
         });
 
-        // update nodes (also get diff here)
-        var diff = _diff(ctrl.links, newLinks);
+        var diffLinks = _diff(ctrl.links, newLinks);
+
+        // update
+        // ctrl.nodes = newNodes;
         ctrl.links = newLinks;
         ctrl._linksIndex = newLinksIndex;
-
 
         // update coresponding svg elements
         // nodes
@@ -284,11 +287,22 @@ return {
           }
         });
 
+        // diffNodes.add.forEach(function(nodeId){
+        //   addNode( newNodes[nodeId] );
+        // });
+        // if(autoCleanUp){
+        //   diffLinks.remove.forEach(function(nodeId){
+        //     removeNode(ctrl.nodes[nodeId]);
+        //   });
+        // }
+
+
+
         // links
-        diff.add.forEach(function(link){
+        diffLinks.add.forEach(function(link){
           addLink( link );
         });
-        diff.remove.forEach(function(link){
+        diffLinks.remove.forEach(function(link){
           removeLink(link);
         });
 
@@ -336,8 +350,17 @@ return {
             return;
           }
 
+          var sp = {
+            x: source.pos.x,
+            y: source.pos.y,
+          };
+          var tp = {
+            x: target.pos.x,
+            y: target.pos.y,
+          };
+
           // me.loan[tid].svg = ctrl._svg.path(['M', me.pos.x, me.pos.y, 'L', target.pos.x, target.pos.y].join(' '))
-          link._svg = ctrl._svg.polyline([[source.pos.x, source.pos.y] /*, [targetCenter.pos.x, targetCenter.pos.y]*/, [target.pos.x, target.pos.y]])
+          link._svg = ctrl._svg.polyline([[sp.x, sp.y] /*, [targetCenter.pos.x, targetCenter.pos.y]*/, [tp.x, tp.y]])
             .back()
             .attr({
               // 'fill-opacity': 0.2,
@@ -438,20 +461,8 @@ return {
       /**
        *
        */
-      function removeNode(id){
-        var node = ctrl.nodes[id];
-        if(node){
-
-          Object.keys(node.loan).forEach(function(to){
-            removeLink(id, to);
-          });
-
-          // svg
-          _animateRemove(node.svg, function(){
-            delete ctrl.nodes[id];
-          });
-
-        }
+      function removeNode(node){
+        _animateRemove(node._svg);
       }
 
 
@@ -487,7 +498,7 @@ return {
 
 
 
-          // loans
+          // links
           ctrl.links.forEach(function(link, i){
               var source = ctrl.nodes[link.from] /*|| targetCenter*/;
               if(!source){
@@ -511,7 +522,7 @@ return {
               };
 
               if(!link._svg) {
-                console.warn('Link "svg" not crested', link);
+                console.warn(' "svg" not created', link);
                 return;
               }
               if(isAnimated){
