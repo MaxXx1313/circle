@@ -13,6 +13,8 @@ function randomColor(){
   // return '#'+Math.random().toString(16).substr(2,6);
 }
 
+var _elementIdCounter=0;
+
 return {
     restrict:'E',
     replace: true,
@@ -25,7 +27,7 @@ return {
       autoCleanUp:'='     // {boolean} default:true
     },
     template: '<div id="drawing">'
-              +'<div id="bc_popup_anchor"></div>'
+              +'<div class="bc_popup_anchor"></div>'
               +'</div>',
     controllerAs: 'ctl',
     controller: function relationCircleController($scope, $element, $attrs, $transclude, $rootScope){
@@ -93,7 +95,7 @@ return {
        */
       ctrl._linksIndex = {};
 
-
+      ctrl._elementIdNum = null;
 
       init();
       /////////////////
@@ -103,11 +105,13 @@ return {
        *
        */
       function init(){
+        ctrl._elementIdNum = _elementIdCounter++;
 
+        $element.attr({id: 'drawing'+ctrl._elementIdNum });
         $element.css({height: size, width:size, position: 'relative'});
 
         // create main svg drawing
-        ctrl._svg = SVG('drawing');
+        ctrl._svg = SVG('drawing'+ctrl._elementIdNum);
         var bgnd_circle = ctrl._svg.circle(2*bgnd_c_radius).attr({
             'fill-opacity': 0,
             'stroke-width': bg_border_w,
@@ -120,8 +124,8 @@ return {
           // show tooltip on hover
 
           $element.on('mouseover', function(e){
+            console.log('mouseover', e.target);
             if(e.target._svg_original){
-              // console.log('mouseover', e.target._svg_original.id);
               showTooltip(e.target._svg_original);
             }
           });
@@ -159,7 +163,7 @@ return {
                  + '<br>Value:&nbsp;' + node.value;
           }
 
-          $('#bc_popup_anchor').css({height:0, width:0, position:'absolute', left: node.pos.x, top: node.pos.y-item_r })
+          $element.find('.bc_popup_anchor').css({height:0, width:0, position:'absolute', left: node.pos.x, top: node.pos.y-item_r })
           // .tooltip('destroy')
             .tooltip({title:text, html:true, animation:false}).tooltip('show');
           // $('svg circle:first').tooltip({title:'test'}).tooltip('show')
@@ -169,7 +173,7 @@ return {
        * @param {SVG} node (unused)
        */
       function hideTooltip(/*node*/){
-        $('#bc_popup_anchor').tooltip('destroy');
+        $element.find('.bc_popup_anchor').tooltip('destroy');
       }
 
       // /**
