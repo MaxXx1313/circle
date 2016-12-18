@@ -44,7 +44,7 @@ return {
       var item_r = 15;
 
       var bgnd_c_center = parseInt(size/2);
-      var bgnd_c_radius = parseInt(bgnd_c_center-4*item_r);
+      var bgnd_c_radius = parseInt(bgnd_c_center-4*item_r); // '4' - some experimental value =)
 
       /**
        * @type {bolean}
@@ -364,7 +364,9 @@ return {
           };
 
           // me.loan[tid].svg = ctrl._svg.path(['M', me.pos.x, me.pos.y, 'L', target.pos.x, target.pos.y].join(' '))
-          link._svg = ctrl._svg.polyline([[sp.x, sp.y] /*, [targetCenter.pos.x, targetCenter.pos.y]*/, [tp.x, tp.y]])
+          // link._svg = ctrl._svg.polyline([[sp.x, sp.y] /*, [targetCenter.pos.x, targetCenter.pos.y]*/, [tp.x, tp.y]])
+          link._svg = ctrl._svg.line(0,0, bgnd_c_radius, 0)
+          // link._svg = ctrl._svg.line(sp.x, sp.y, tp.x, tp.y)
             .back()
             .attr({
               // 'fill-opacity': 0.2,
@@ -372,7 +374,14 @@ return {
               'stroke-width': 3,
               // 'stroke': _firstrun ? me.color : '#0F0'
               'stroke': link.color || source.color
-            })
+            });
+          link._svg._rotation = 0;
+          link._svg.attr({
+              style: css_style({
+                transform: myline(sp.x, sp.y, tp.x, tp.y, link._svg),
+                transition: 'all linear 1s'
+              })
+            });
             // if(!_firstrun){
             //   me.loan[to].svg.animate().attr({'stroke': me.color});
             // }
@@ -515,8 +524,6 @@ return {
 
           });
 
-
-
           // links
           ctrl.links.forEach(function(link, i){
               var source = ctrl.nodes[link.from] /*|| targetCenter*/;
@@ -544,14 +551,20 @@ return {
                 console.warn(' "svg" not created', link);
                 return;
               }
-              if(isAnimated){
-                link._svg.animate().plot([[sp.x, sp.y] /*, [targetCenter.pos.x, targetCenter.pos.y]*/ , [tp.x, tp.y]]);
-                // link._svg.animate().plot(['M', sp.x, sp.y, 'L', target.pos.x, target.pos.y].join(' '));
+              // if(isAnimated){
+              //   link._svg.animate().plot([[sp.x, sp.y] /*, [targetCenter.pos.x, targetCenter.pos.y]*/ , [tp.x, tp.y]]);
+              //   // link._svg.animate().plot(['M', sp.x, sp.y, 'L', target.pos.x, target.pos.y].join(' '));
 
-              }else{
-                link._svg.plot([[sp.x, sp.y] /*, [targetCenter.pos.x, targetCenter.pos.y]*/ , [tp.x, tp.y]]);
-                // link._svg.plot(['M', sp.x, sp.y, 'L', target.pos.x, target.pos.y].join(' '));
-              }
+              // }else{
+              //   link._svg.plot([[sp.x, sp.y] /*, [targetCenter.pos.x, targetCenter.pos.y]*/ , [tp.x, tp.y]]);
+              //   // link._svg.plot(['M', sp.x, sp.y, 'L', target.pos.x, target.pos.y].join(' '));
+              // }
+              link._svg.attr({
+                style: css_style({
+                  transform: myline(sp.x, sp.y, tp.x, tp.y, link._svg),
+                  transition: 'all linear 1s'
+                })
+              });
 
               // filter
               if($scope.filter!==null && $scope.filter!==undefined && $scope.filter !== id && ( tid!==$scope.filter || $scope.filterDirection!=="two") ){
@@ -567,7 +580,13 @@ return {
 
 
       function css_translate(x, y){
-        return 'translate(%s, %s)'.replace('%s', x+'px').replace('%s', y+'px');
+        return 'translate(%s, %s) '.replace('%s', x+'px').replace('%s', y+'px');
+      }
+      function css_scale(factor){
+        return 'scaleX(%s) '.replace('%s', factor);
+      }
+      function css_rotate(rad){
+        return 'rotate(%srad) '.replace('%s', rad);
       }
 
       function css_style(obj){
@@ -576,7 +595,23 @@ return {
         }, '');
       }
 
+      function myline(x1,y1, x2,y2, _svg){
+        var len2 = (x2-x1)*(x2-x1)+(y2-y1)*(y2-y1);
+        var etalon = bgnd_c_radius*bgnd_c_radius;
+        var factor = Math.sqrt(len2/etalon);
 
+        // prevent overloop rotations
+        var rotation = Math.atan2(y2-y1, x2-x1);
+        if(rotation - _svg._rotation > Math.PI){
+          rotation -= 2*Math.PI;
+        }
+        if(_svg._rotation - rotation > Math.PI){
+          rotation += 2*Math.PI;
+        }
+        _svg._rotation = rotation;
+
+        return css_translate(x1, y1)+css_rotate(rotation)+css_scale(factor);
+      }
 
     } // -controller
 
