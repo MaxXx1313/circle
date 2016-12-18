@@ -6,21 +6,6 @@ angular.module('relationCircle', [])
 // & is used to bind functions
 .directive('relationCircle', function(){
 
-var dataExample = [
-  {
-    id: 1,
-    loan:{ 2: {val:500} }
-  },
-  {
-    id: 2,
-    loan: { 3: {val:300} }
-  },
-  {
-    id: 3,
-    loan: { 1: {val:200} }
-  }
-];
-
 var ci=0, colorPreset = [ '#EC7063', '#A569BD', '#F4D03F', '#5DADE2', '#45B39D', '#F5B041', '#58D68D', '#6B96F7', '#DC7633', '#DE9FF1', '#7BCCDD' ];
 function randomColor(){
   if( ++ci >= colorPreset.length ){ ci = 0 }
@@ -35,14 +20,14 @@ return {
     scope: {
       size:'=',               // {number} size in px. default: 500
       data:'=',               // {} - data. see {@link dataExample}
-      filter:'=',             // {string} nodeId - showonly selected nodes and it's relations
+      filter:'=',             // {string} nodeId - show only selected nodes and it's relations
       filterDirection:'='     // {'one'|'two'}
     },
-    template: '<div id="drawing" class="blockchain-pie">'
+    template: '<div id="drawing">'
               +'<div id="bc_popup_anchor"></div>'
               +'</div>',
     controllerAs: 'ctl',
-    controller: function($scope, $element, $attrs, $transclude, $rootScope){
+    controller: function relationCircleController($scope, $element, $attrs, $transclude, $rootScope){
       var ctrl = this;
       var size = $scope.size = $scope.size || 500;
       // var filter = $scope.filter || null;
@@ -57,44 +42,101 @@ return {
       var bgnd_c_center = parseInt(size/2);
       var bgnd_c_radius = parseInt(bgnd_c_center-4*item_r);
 
+      /**
+       * @type {bolean}
+       */
       var _firstrun = true;
 
-      ctrl.draw = null;
+      /**
+       * Link to main svg object
+       * @type {SVG}
+       */
+      ctrl._svg = null;
+
+      /**
+       * @typedef {object} NodeInfo
+       * @property {string} id
+       * @property {number} [value] - node weight
+       * @property {string} [color]
+       * @property {SVG} [_svg] - link to svg element
+       */
+
+      /**
+       * @typedef {object} LinkInfo
+       * @property {string} from - source node id
+       * @property {string} to   - destination node id
+       * @property {number} [value] - link weight
+       * @property {string} [color] -link color. default - same as source color
+       * @property {SVG} [_svg] - link to svg element
+       */
+
+
+
+      /**
+       * Nodes
+       * @type {Object<NodeInfo>}
+       */
       ctrl.nodes = {};
 
-      $element.css({height: size, width:size, position: 'relative'});
 
-      // create svg drawing
-      ctrl.draw = SVG('drawing');
-      var bgnd_circle = ctrl.draw.circle(2*bgnd_c_radius).attr({
-          'fill-opacity': 0,
-          'stroke-width': bg_border_w,
-          'stroke':'#000'
-        })
-        .move(bgnd_c_center - bgnd_c_radius, bgnd_c_center - bgnd_c_radius);
+      /**
+       * Linkes array
+       * @type {Aray<LinkInfo>}
+       */
+      ctrl.links = [];
+
+      /**
+       * Linkes object
+       * @type {Object<Object<LinkInfo>>} from => to => LinkInfo
+       */
+      ctrl._linksIndex = {};
+
+
+
+      init();
+      /////////////////
+
 
       /**
        *
        */
-      if( $().tooltip ){
-        // show tooltip on hover
+      function init(){
 
-        $element.on('mouseover', function(e){
-          if(/*e.target.tagName.toLowerCase() === 'circle' && */ e.target._svg){
-            // console.log('mouseover', e.target._svg.id);
-            showInfo(e.target._svg);
-          }
-        });
+        $element.css({height: size, width:size, position: 'relative'});
 
-        $element.on('mouseout', function(e){
-          // if(e.target === e.currentTarget){
-          if(/*e.target.tagName.toLowerCase() === 'circle' && */ e.target._svg){
-            $('#bc_popup_anchor').tooltip('destroy');
-          }
-        });
+        // create main svg drawing
+        ctrl._svg = SVG('drawing');
+        var bgnd_circle = ctrl._svg.circle(2*bgnd_c_radius).attr({
+            'fill-opacity': 0,
+            'stroke-width': bg_border_w,
+            'stroke':'#000'
+          })
+          .move(bgnd_c_center - bgnd_c_radius, bgnd_c_center - bgnd_c_radius);
+
+        // bind tooltip
+        if( $().tooltip ){
+          // show tooltip on hover
+
+          $element.on('mouseover', function(e){
+            if(e.target._svg_original){
+              // console.log('mouseover', e.target._svg_original.id);
+              showTooltip(e.target._svg_original);
+            }
+          });
+
+          $element.on('mouseout', function(e){
+            // if(e.target === e.currentTarget){
+            if(e.target._svg_original){
+              hideTooltip(e.target._svg_original);
+            }
+          });
+        }
       }
 
-      function showInfo(node){
+      /**
+       * @param {SVG} node
+       */
+      function showTooltip(node){
           // console.log('hovered:', node.id);
           console.log('balance:', node.balance);
           var n = Object.keys(node.loan).length;
@@ -104,8 +146,13 @@ return {
           // .tooltip('destroy')
             .tooltip({title:text, html:true, animation:false}).tooltip('show');
           // $('svg circle:first').tooltip({title:'test'}).tooltip('show')
+      }
 
-
+      /**
+       * @param {SVG} node (unused)
+       */
+      function hideTooltip(/*node*/){
+        $('#bc_popup_anchor').tooltip('destroy');
       }
 
       // update(false);
@@ -114,7 +161,7 @@ return {
       //   addNode(randomNode());
       //   _update();
       // });
-
+      /*
       function randomNode(){
         var node = {id:parseInt(10+Math.random()*90), loan:{} };
 
@@ -129,61 +176,85 @@ return {
 
         return node;
       }
+      */
 
       /**
        *
        */
       $scope.$watch('filter', function(){
-        console.log('Showing for '+$scope.filter);
+        console.log('Apply filter: NODE_ID=%s', $scope.filter);
         _update();
       });
 
+
+
       $scope.$watchCollection('data', function(){
+        var links = $scope.data || [];
         console.log('$scope.data');
-        console.dir($scope.data);
-        // make associcative
-        var dataAssoc = $scope.data.reduce(function(r,c){
-          r[c.id] = c;
-          return r;
-        },{});
+        console.dir(links);
 
-        var oldNodes = Object.keys(ctrl.nodes);
-        var newNodes = Object.keys(dataAssoc);
-        var nodesDiff = _diff(oldNodes, newNodes);
+        /**
+         * Assume data is a list of links
+         */
 
-        // nodesDiff.add.forEach(function(id){ addNode(dataAssoc[id]); });
-        nodesDiff.remove.forEach(removeNode);
+        var newLinks = [];
+        var newLinksIndex = {};
+        links.forEach(function(link){
 
-        Object.keys(dataAssoc).forEach(function(id){
-          var node = dataAssoc[id];
-
-
-          // loan
-          var oldLoan = ctrl.nodes[id] ? Object.keys(ctrl.nodes[id].loan) : [];
-          var newLoan = Object.keys(node.loan || {});
-
-          var diff = _diff(oldLoan, newLoan);
-
-          // node
-          if(!ctrl.nodes[node.id]){
-            addNode(node);
-
-          // setTimeout(removeNode.bind(this, node.id), 2000); // DEBUG
-          }else{
-            // Update fields
-            ctrl.nodes[node.id].balance = node.balance;
-            node.color = ctrl.nodes[node.id].color;
+          // validate
+          if(typeof link.from === "undefined"){
+            console.warn('Link "from" must be set:', link);
+            return;
+          }
+          var target = ctrl.nodes[link.to] /*|| targetCenter*/;
+          if(typeof link.to === "undefined"){
+            console.warn('Link "to" must be set:', link);
+            return;
           }
 
 
-          diff.add.forEach(function(to){
-            addLoan(id, to, node.loan[to].val );
-          });
-          diff.remove.forEach(function(to){
-            removeLoan(id, to);
-          });
+          // process & update nodes
+          ctrl.nodes[link.from] = ctrl.nodes[link.from] || {
+            id: link.from,
+            value:0,
+            color: link.color || randomColor()
+          };
+
+          ctrl.nodes[link.to] = ctrl.nodes[link.to] || {
+            id: link.to,
+            value:0,
+            color: randomColor()
+          };
+
+          // process links
+          var linkItem = (ctrl._linksIndex[link.from] || {})[links.to] || {};
+          Object.assign(linkItem, link); // copy all properties. don't erase already existed
+
+          // save
+          newLinksIndex[link.from] = newLinksIndex[link.from] || {};
+          newLinksIndex[link.from][links.to] = newLinksIndex[link.from][links.to] || linkItem;
+          newLinks.push(linkItem);
+        });
+
+        var diff = _diff(ctrl.links, newLinks);
+        ctrl.links = newLinks;
+        ctrl._linksIndex = newLinksIndex;
 
 
+        // update coresponding svg elements
+        // nodes
+        Object.keys(ctrl.nodes).forEach(function(id){
+          if(!ctrl.nodes[id]._svg){
+            addNode(ctrl.nodes[id]);
+          }
+        });
+
+        // links
+        diff.add.forEach(function(link){
+          addLink( link );
+        });
+        diff.remove.forEach(function(to){
+          removeLink(id, to);
         });
 
         _update();
@@ -191,6 +262,10 @@ return {
       });
 
 
+      /**
+       * @param {Array} from - array with old data
+       * @param {Array} to - array with new data
+       */
       function _diff(from, to){
           return {
               add: to.filter(function(item){ return from.indexOf(item)<0; }),
@@ -199,53 +274,52 @@ return {
       }
 
 
+      /**
+       * add svg link figure
+       */
+      function addLink(link){
+          console.log('addLink', link);
 
-      function addLoan(from, to, value){
-          console.log('addLoan', from, to);
+          // TODO: get real nodes position
+          var source = ctrl.nodes[link.from] /*|| targetCenter*/;
+          if(!source){
+            console.warn('Link "from" node not found:', link);
+            return;
+          }
+          var target = ctrl.nodes[link.to] /*|| targetCenter*/;
+          if(!target){
+            console.warn('Link "to" node not found:', link);
+            return;
+          }
 
-          var me = ctrl.nodes[from];
-          me.loan[to] = {
-            val:value,
-            svg: null
-          };
-
-          // svg
-          var target = ctrl.nodes[to] || targetCenter;
-          // me.loan[tid].svg = ctrl.draw.path(['M', me.pos.x, me.pos.y, 'L', target.pos.x, target.pos.y].join(' '))
-          me.loan[to].svg = ctrl.draw.polyline([[me.pos.x, me.pos.y] /*, [targetCenter.pos.x, targetCenter.pos.y]*/, [target.pos.x, target.pos.y]])
+          // me.loan[tid].svg = ctrl._svg.path(['M', me.pos.x, me.pos.y, 'L', target.pos.x, target.pos.y].join(' '))
+          link._svg = ctrl._svg.polyline([[source.pos.x, source.pos.y] /*, [targetCenter.pos.x, targetCenter.pos.y]*/, [target.pos.x, target.pos.y]])
             .back()
             .attr({
               // 'fill-opacity': 0.2,
               'stroke-opacity': 0.7,
               'stroke-width': 3,
               // 'stroke': _firstrun ? me.color : '#0F0'
-              'stroke': me.color
+              'stroke': link.color
             })
             // if(!_firstrun){
             //   me.loan[to].svg.animate().attr({'stroke': me.color});
             // }
 
-          // setTimeout(removeLoan.bind(this, from, to), 2000); // DEBUG
+          // setTimeout(removeLink.bind(this, from, to), 2000); // DEBUG
       }
 
 
       /**
-        *
-        */
-      function removeLoan(from, to){
-        console.log('removeLoan', from, to);
-        var node = ctrl.nodes[from];
-
-        // svg
-        _animateRemove( node.loan[to].svg, function(){
-          delete node.loan[to];
-        });
-
+       *
+       */
+      function removeLink(link){
+        console.log('removeLink', link);
+        _animateRemove( link._svg );
       }
 
+
       function _animateRemove(svgElement, cb){
-
-
         var fx = svgElement
           .animate()
           .attr({'stroke':'#F00', 'fill':'#F00', 'stroke-width':4})
@@ -256,7 +330,10 @@ return {
         if( svgElement instanceof SVG.Circle){
           fx = fx.attr({r:item_r0});
         }
-        fx.after(function(){ svgElement.remove(); cb && cb(); });
+        fx.after(function(){
+          svgElement.remove();
+          cb && cb();
+        });
       }
 
 
@@ -287,35 +364,31 @@ return {
        *
        */
       function addNode(node){
-        if( !ctrl.nodes[node.id] ){
-          console.log('addNode', node);
-          ctrl.nodes[node.id] = node;
-
-          var ids = Object.keys(ctrl.nodes);
-
-          // body
-          var me = ctrl.nodes[node.id];
-          // me.pos = polarEntry();
-          me.pos = polar(ids.indexOf(""+node.id), ids.length);
-
-          me.color = randomColor();
-          me.svg = ctrl.draw.circle(2*item_r0).attr({
-              'stroke-width': 1, //item_border_w,
-              // 'stroke':'#F33'
-              'stroke': me.color,
-              'fill': me.color
-            })
-            .move(me.pos.x-item_r0, me.pos.y-item_r0);
-
-          me.svg.animate(300, '<')
-            .attr({r:item_r})
-            .move(me.pos.x-item_r, me.pos.y-item_r);
-
-          me.svg.node._svg = me;
+        console.log('addNode', node);
 
 
+        // body
+        var me = node;
+        // me.pos = polarEntry();
+        var ids = Object.keys(ctrl.nodes);
+        me.pos = polar(ids.indexOf(""+node.id), ids.length);
 
-        }
+        // me.color = randomColor();
+        me._svg = ctrl._svg.circle(2*item_r0).attr({
+            'stroke-width': 1, //item_border_w,
+            // 'stroke':'#F33'
+            'stroke': me.color,
+            'fill': me.color
+          })
+          .move(me.pos.x-item_r0, me.pos.y-item_r0);
+
+        me._svg.animate(300, '<')
+          .attr({r:item_r})
+          .move(me.pos.x-item_r, me.pos.y-item_r);
+
+        // link back to object
+        me._svg.node._svg_original = me;
+
       }
 
       /**
@@ -326,7 +399,7 @@ return {
         if(node){
 
           Object.keys(node.loan).forEach(function(to){
-            removeLoan(id, to);
+            removeLink(id, to);
           });
 
           // svg
@@ -344,24 +417,24 @@ return {
             isAnimated = !_firstrun;
           }
 
-          var n = Object.keys(ctrl.nodes).length;
+          var nodesCount = Object.keys(ctrl.nodes).length;
           Object.keys(ctrl.nodes).forEach(function(id, i){
             var me = ctrl.nodes[id];
-            me.pos = polar(i, n);
+            me.pos = polar(i, nodesCount);
 
             // body
             if(isAnimated){
-              ctrl.nodes[id].svg.animate().move(me.pos.x-item_r, me.pos.y-item_r);
+              ctrl.nodes[id]._svg.animate().move(me.pos.x-item_r, me.pos.y-item_r);
             }else{
-              ctrl.nodes[id].svg.move(me.pos.x-item_r, me.pos.y-item_r);
+              ctrl.nodes[id]._svg.move(me.pos.x-item_r, me.pos.y-item_r);
             }
 
 
             // filter
-            if($scope.filter!==null && $scope.filter!==undefined && $scope.filter !== id && (!me.loan[$scope.filter] || $scope.filterDirection!=="two")){
-              me.svg.hide();
+            if($scope.filter!==null && $scope.filter!==undefined && $scope.filter !== id){
+              me._svg.hide();
             }else{
-              me.svg.show();
+              me._svg.show();
             }
 
           });
@@ -369,44 +442,48 @@ return {
 
 
           // loans
-          Object.keys(ctrl.nodes).forEach(function(id, i){
-            var me = ctrl.nodes[id];
-
-            Object.keys(me.loan).forEach(function(tid){
-              var target = ctrl.nodes[tid] /*|| targetCenter*/;
+          ctrl.links.forEach(function(link, i){
+              var source = ctrl.nodes[link.from] /*|| targetCenter*/;
+              if(!source){
+                console.warn('Link "from" node not found:', link);
+                return;
+              }
+              var target = ctrl.nodes[link.to] /*|| targetCenter*/;
               if(!target){
-                console.warn('Loan target not found:', tid);
+                console.warn('Link "to" node not found:', link);
                 return;
               }
 
+              // TODO: get real nodes position
+              var sp = {
+                x: source.pos.x,
+                y: source.pos.y,
+              };
               var tp = {
                 x: target.pos.x,
                 y: target.pos.y,
               };
 
-              var loan = me.loan[tid];
-              if(!loan.svg) return;
-
+              if(!link._svg) {
+                console.warn('Link "svg" not crested', link);
+                return;
+              }
               if(isAnimated){
-                loan.svg.animate().plot([[me.pos.x, me.pos.y] /*, [targetCenter.pos.x, targetCenter.pos.y]*/ , [tp.x, tp.y]]);
-                // loan.svg.animate().plot(['M', me.pos.x, me.pos.y, 'L', target.pos.x, target.pos.y].join(' '));
+                link._svg.animate().plot([[sp.x, sp.y] /*, [targetCenter.pos.x, targetCenter.pos.y]*/ , [tp.x, tp.y]]);
+                // link._svg.animate().plot(['M', sp.x, sp.y, 'L', target.pos.x, target.pos.y].join(' '));
 
               }else{
-                loan.svg.plot([[me.pos.x, me.pos.y] /*, [targetCenter.pos.x, targetCenter.pos.y]*/ , [tp.x, tp.y]]);
-                // loan.svg.plot(['M', me.pos.x, me.pos.y, 'L', target.pos.x, target.pos.y].join(' '));
+                link._svg.plot([[sp.x, sp.y] /*, [targetCenter.pos.x, targetCenter.pos.y]*/ , [tp.x, tp.y]]);
+                // link._svg.plot(['M', sp.x, sp.y, 'L', target.pos.x, target.pos.y].join(' '));
               }
 
               // filter
               if($scope.filter!==null && $scope.filter!==undefined && $scope.filter !== id && ( tid!==$scope.filter || $scope.filterDirection!=="two") ){
-                me.loan[tid].svg.hide();
+                link._svg.hide();
               }else{
-                me.loan[tid].svg.show();
-                target.svg.show();
+                link._svg.show();
+                target._svg.show();
               }
-
-
-
-            });
           });
 
           _firstrun = false;
@@ -415,6 +492,8 @@ return {
 
 
     } // -controller
+
+
   }; // -return
 });
 

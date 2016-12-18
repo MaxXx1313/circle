@@ -44,19 +44,18 @@
          */
         var dataExample = [
           {
-            id: 1,
-            balance: 100,
-            loan:{ 2: {val:500} }
+            from: 1,
+            to: 2,
+            value:500,
+            color : 'red'
           },
           {
-            id: 2,
-            balance: 100,
-            loan: { 3: {val:300} }
+            from: 2,
+            to: 3
           },
           {
-            id: 3,
-            balance: 100,
-            loan: { 1: {val:200} }
+            from: 3,
+            to:1
           }
         ];
 
@@ -90,15 +89,16 @@
          * @more https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math/random
          */
         function randomNode(id){
-          var loanValue = parseInt(Math.random()*500);
-          var ids = Object.keys(ctrl.nodes);
-          var loanTarget = ctrl.nodes[parseInt(Math.random() * ids.length)];
+          var from = parseInt(Math.random()*10);
+          var to = parseInt(Math.random()*(10-1));
+          if(to>=from) to++; // this will make "to" and "from" different
+          var value = parseInt(Math.random()*500);
 
-          var node = {id: id, loan:{}};
-          if(loanTarget && loanTarget.id !== id){
-           node.loan[loanTarget.id] = {val:loanValue};
-          }
-          return node;
+          return {
+            from:from,
+            to:to,
+            value: value
+          };
         }
 
 
