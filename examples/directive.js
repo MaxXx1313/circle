@@ -137,10 +137,25 @@ return {
        * @param {SVG} node
        */
       function showTooltip(node){
-          // console.log('hovered:', node.id);
-          console.log('balance:', node.balance);
-          var n = Object.keys(node.loan).length;
-          var text = '$&nbsp;'+node.balance + '<br>' + 'Claims:&nbsp;' +n ;
+          console.log('showTooltip', node);
+          var text='';
+
+          if(typeof node.id !== "undefined"){
+            // this is node, not a link
+            var outCount = Object.keys(ctrl._linksIndex[node.id]||[]).length;
+            var inCount = (ctrl.links||[]).reduce(function(sum, c){
+              return sum + (c.to == node.id ? 1 : 0);
+            }, 0);
+
+            text = 'ID:&nbsp;' + node.id
+                 // + '<br>Value:&nbsp;'+node.value
+                 + '<br>' + 'Links outbound:&nbsp;' + outCount
+                 + '<br>' + 'Links inbound:&nbsp;' + inCount ;
+          }else{
+            // assume it's a link
+            text = 'From&nbsp;{from}&nbsp;to&nbsp;{to}'.replace('{from}', node.from).replace('{to}', node.to)
+                 + '<br>Value:&nbsp;' + node.value;
+          }
 
           $('#bc_popup_anchor').css({height:0, width:0, position:'absolute', left: node.pos.x, top: node.pos.y-item_r })
           // .tooltip('destroy')
@@ -155,63 +170,45 @@ return {
         $('#bc_popup_anchor').tooltip('destroy');
       }
 
-      // update(false);
-
-      // $element.on('click', function(){
-      //   addNode(randomNode());
+      // /**
+      //  *
+      //  */
+      // $scope.$watch('filter', function(){
+      //   console.log('Apply filter: NODE_ID=%s', $scope.filter);
       //   _update();
       // });
-      /*
-      function randomNode(){
-        var node = {id:parseInt(10+Math.random()*90), loan:{} };
 
-        var loanCount = parseInt(1 + Math.random() * Object.keys(ctrl.nodes).length / 3); // maximum 1/3 of all nodes
-        while(loanCount-->0){
-          // loan
-          var targetIds = Object.keys(ctrl.nodes);
-          var tid = targetIds[parseInt(Math.random()*targetIds.length)];
 
-          node.loan[tid] = {val: 0.1 + Math.random() };
-        }
-
-        return node;
-      }
-      */
 
       /**
-       *
+       * Assume data is a list of links
        */
-      $scope.$watch('filter', function(){
-        console.log('Apply filter: NODE_ID=%s', $scope.filter);
-        _update();
-      });
-
-
-
       $scope.$watchCollection('data', function(){
         var links = $scope.data || [];
         console.log('$scope.data');
         console.dir(links);
 
-        /**
-         * Assume data is a list of links
-         */
+
+        // validate
+        links = links.filter(function(link){
+          if(typeof link.from === "undefined"){
+            console.warn('Link "from" must be set:', link);
+            return false;
+          }
+
+          if(typeof link.to === "undefined"){
+            console.warn('Link "to" must be set:', link);
+            return false;
+          }
+
+          return true;
+        });
+
 
         var newLinks = [];
         var newLinksIndex = {};
+
         links.forEach(function(link){
-
-          // validate
-          if(typeof link.from === "undefined"){
-            console.warn('Link "from" must be set:', link);
-            return;
-          }
-          var target = ctrl.nodes[link.to] /*|| targetCenter*/;
-          if(typeof link.to === "undefined"){
-            console.warn('Link "to" must be set:', link);
-            return;
-          }
-
 
           // process & update nodes
           ctrl.nodes[link.from] = ctrl.nodes[link.from] || {
@@ -225,17 +222,53 @@ return {
             value:0,
             color: randomColor()
           };
+        });
 
-          // process links
-          var linkItem = (ctrl._linksIndex[link.from] || {})[links.to] || {};
+
+        // process links
+        links.forEach(function(link){
+          // check for dumplication
+          var duplicationlinkItem = (newLinksIndex[link.from] || {})[link.to] || null;
+          if(duplicationlinkItem){
+            console.warn('Duplicated link:', link);
+            // just sum up values
+            duplicationlinkItem.value = (duplicationlinkItem.value || 0) + (link.value || 0);
+            return;
+
+          }
+
+          // check for opposite directed link
+          var reverselinkItem = (newLinksIndex[link.to] || {})[link.from] || null;
+          if(reverselinkItem){
+            console.warn('Reversed link:', link);
+            // just sum up values
+            reverselinkItem.value = (reverselinkItem.value || 0) - (link.value || 0);
+            if( reverselinkItem.value === 0){
+              // links eliminated
+              delete newLinksIndex[link.to][link.from];
+              return;
+
+            }else if( reverselinkItem.value < 0){
+              // link reverted. delete current and create new one
+              delete newLinksIndex[link.to][link.from];
+              var idx = newLinks.indexOf(reverselinkItem);
+              if(idx>=0){
+                newLinks.splice(idx, 1);
+              }
+            }
+          }
+
+          // create new link
+          var linkItem = (ctrl._linksIndex[link.from] || {})[link.to] || {};
           Object.assign(linkItem, link); // copy all properties. don't erase already existed
 
           // save
-          newLinksIndex[link.from] = newLinksIndex[link.from] || {};
-          newLinksIndex[link.from][links.to] = newLinksIndex[link.from][links.to] || linkItem;
+          _addToIndex(linkItem, newLinksIndex);
           newLinks.push(linkItem);
+
         });
 
+        // update nodes (also get diff here)
         var diff = _diff(ctrl.links, newLinks);
         ctrl.links = newLinks;
         ctrl._linksIndex = newLinksIndex;
@@ -253,13 +286,22 @@ return {
         diff.add.forEach(function(link){
           addLink( link );
         });
-        diff.remove.forEach(function(to){
-          removeLink(id, to);
+        diff.remove.forEach(function(link){
+          removeLink(link);
         });
 
         _update();
 
       });
+
+      /**
+       * @param {LinkInfo} link
+       * @param {Object<Object<LinkInfo>>} indexObj
+       */
+      function _addToIndex(link, indexObj){
+        indexObj[link.from] = indexObj[link.from] || {};
+        indexObj[link.from][link.to] = indexObj[link.from][link.to] || link;
+      }
 
 
       /**
@@ -300,7 +342,7 @@ return {
               'stroke-opacity': 0.7,
               'stroke-width': 3,
               // 'stroke': _firstrun ? me.color : '#0F0'
-              'stroke': link.color
+              'stroke': link.color || source.color
             })
             // if(!_firstrun){
             //   me.loan[to].svg.animate().attr({'stroke': me.color});
@@ -413,6 +455,8 @@ return {
 
       // recalculate elements position
       function _update(isAnimated){
+          console.log('_update');
+          console.dir(ctrl);
           if(typeof isAnimated === 'undefined'){
             isAnimated = !_firstrun;
           }

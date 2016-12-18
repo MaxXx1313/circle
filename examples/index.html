@@ -64,14 +64,11 @@
          */
         ctrl.nodes = dataExample;
 
-        var i=4; // counter for random value generation
-
         /**
          *
          */
         ctrl.addNode = function(){
-          ctrl.nodes.push( randomNode(i) );
-          i++;
+          ctrl.nodes.push( randomNode() );
         }
 
         /**
@@ -79,21 +76,24 @@
          */
         ctrl.clear = function(){
           ctrl.nodes = [];
-          i = 0;
         }
 
         /**
          * Generate random node. just for a demo
-         * @param {number} id - id for a new node
          *
          * @more https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math/random
          */
-        function randomNode(id){
-          var from = parseInt(Math.random()*10);
-          var to = parseInt(Math.random()*(10-1));
+        function randomNode(){
+          var from = 1; //parseInt(Math.random()*10);
+          var to = 2;//parseInt(Math.random()*(10-1));
           if(to>=from) to++; // this will make "to" and "from" different
           var value = parseInt(Math.random()*500);
 
+          console.log('randomNode', {
+            from:from,
+            to:to,
+            value: value
+          });
           return {
             from:from,
             to:to,
