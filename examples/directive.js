@@ -283,12 +283,12 @@ return {
         Object.keys(ctrl.nodes).forEach(function(id){
           if(!ctrl.nodes[id]._svg){
             // seems like it's a new element
-            addNode(ctrl.nodes[id]);
+            createNode(ctrl.nodes[id]);
           }
         });
 
         // diffNodes.add.forEach(function(nodeId){
-        //   addNode( newNodes[nodeId] );
+        //   createNode( newNodes[nodeId] );
         // });
         // if(autoCleanUp){
         //   diffLinks.remove.forEach(function(nodeId){
@@ -300,7 +300,7 @@ return {
 
         // links
         diffLinks.add.forEach(function(link){
-          addLink( link );
+          createLink( link );
         });
         diffLinks.remove.forEach(function(link){
           removeLink(link);
@@ -335,8 +335,8 @@ return {
       /**
        * add svg link figure
        */
-      function addLink(link){
-          console.log('addLink', link);
+      function createLink(link){
+          console.log('createLink', link);
 
           // TODO: get real nodes position
           var source = ctrl.nodes[link.from] /*|| targetCenter*/;
@@ -374,6 +374,9 @@ return {
             // }
 
           // setTimeout(removeLink.bind(this, from, to), 2000); // DEBUG
+
+          // link back to object
+          link._svg.node._svg_original = link;
       }
 
 
@@ -430,8 +433,8 @@ return {
       /**
        *
        */
-      function addNode(node){
-        console.log('addNode', node);
+      function createNode(node){
+        console.log('createNode', node);
 
 
         // body
