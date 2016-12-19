@@ -44,6 +44,7 @@ return {
       var item_r = 15;
 
       var line_padding = 2;
+      var line_width = 5;
 
       var bgnd_c_center = parseInt(size/2);
       var bgnd_c_radius = parseInt(bgnd_c_center-4*item_r); // '4' - some experimental value =)
@@ -392,7 +393,7 @@ return {
 
           // we use css transitions to place this lineproperly
           // link._svg = ctrl.svg.line(0,0, bgnd_c_radius, 0)
-          link._svg = ctrl.svg.rect(bgnd_c_radius, 5)
+          link._svg = ctrl.svg.rect(bgnd_c_radius, line_width)
             .back()
             // .backward()
             // .after( $element.children('circle:last').get(0) )
