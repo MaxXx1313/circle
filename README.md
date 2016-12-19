@@ -12,7 +12,7 @@ Issues
 * Don't work properly in IE
 
 
-Supported browsers
+Was tested on
 ==================
 * Chrome 55.0.2883.87 
-* Firefox 50.0.2
+* Firefox 50.1.0
