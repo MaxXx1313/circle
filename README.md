@@ -8,7 +8,11 @@ You can use nodejs [http-server](https://www.npmjs.com/package/http-server) modu
 
 Issues
 ======
-
-* Supports only one element on a page
 * One side of line is not animated properly when items are added too fast
-* Sometimes can left unused lines
+* Don't work properly in IE
+
+
+Supported browsers
+==================
+* Chrome 55.0.2883.87 
+* Firefox 50.0.2

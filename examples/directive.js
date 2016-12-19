@@ -1,3 +1,15 @@
+// fix for IE
+// if(!Object.assign){
+//   Object.assign = function(a0, a1){
+//     for(var name in a1){
+//       if(a1.hasOwnProperty(name)){
+//         a0[name] = a1[name];
+//       }
+//     }
+//     return a0;
+//   }
+// }
+
 angular.module('relationCircle', [])
 
 // scope:
@@ -174,11 +186,11 @@ return {
             text = 'From&nbsp;{from}&nbsp;to&nbsp;{to}'.replace('{from}', node.from).replace('{to}', node.to)
                  + '<br>Value:&nbsp;' + (node.value || 'N/A');
 
-            pos = orto_projection(node.line[0], node.line[1], {x:x, y:y});
-            // pos = {
-            //   x : node.line[0].x + (node.line[1].x - node.line[0].x)/2,
-            //   y : node.line[0].y + (node.line[1].y - node.line[0].y)/2
-            // };
+            // pos = orto_projection(node.line[0], node.line[1], {x:x, y:y});
+            pos = {
+              x : node.line[0].x + (node.line[1].x - node.line[0].x)/2,
+              y : node.line[0].y + (node.line[1].y - node.line[0].y)/2
+            };
 
             // pos = {
             //   x : x,
@@ -409,8 +421,8 @@ return {
           link._svg.attr({
               style: css_style({
                 transform: myline(sp.x, sp.y, tp.x, tp.y, link._svg),
-                transition: 'all linear 1s',
-                'transform-origin': 'left center'
+                transition: 'all linear 1s'
+                // 'transform-origin': 'left center'
               })
             });
             // if(!_firstrun){
@@ -598,8 +610,8 @@ return {
               link._svg.attr({
                 style: css_style({
                   transform: myline(sp.x, sp.y, tp.x, tp.y, link._svg),
-                  transition: 'all linear 1s',
-                 'transform-origin': 'left center'
+                  transition: 'all linear 1s'
+                 // 'transform-origin': 'left center'
                 })
               });
 
