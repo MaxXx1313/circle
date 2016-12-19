@@ -43,6 +43,8 @@ return {
       var item_r0 = 1;
       var item_r = 15;
 
+      var line_padding = 2;
+
       var bgnd_c_center = parseInt(size/2);
       var bgnd_c_radius = parseInt(bgnd_c_center-4*item_r); // '4' - some experimental value =)
 
@@ -171,32 +173,15 @@ return {
             text = 'From&nbsp;{from}&nbsp;to&nbsp;{to}'.replace('{from}', node.from).replace('{to}', node.to)
                  + '<br>Value:&nbsp;' + (node.value || 'N/A');
 
-            // a*x + b*y - c1 = 0 // line[0]
-            // b*x - a*y - c2 = 0 // cusror pos
-            var x0 = node.line[0].x;
-            var y0 = node.line[0].y;
-            var x1 = node.line[1].x;
-            var y1 = node.line[1].y;
-
-            var p = 2*x0*y0-x0*y1-x1*y0;
-
-            // var a1 = node.line[1].x - node.line[0].x;
-            // var b1 = node.line[1].y - node.line[0].y;
-            var a1 = (y0-y1)/p;
-            var b1 = -(x0-x1)/p;
-            var b2 = a1;
-            var a2 = -b1;
-
-            var c1 = -(a1*node.line[0].x + b1*node.line[0].y);
-            var c2 = -(a2*x + b2*y);
-            pos = {
-              x : (b1*c2-b2*c1)/(a1*b2-a2*b1),
-              y : (c1*a2-c2*a1)/(a1*b2-a2*b1),
-            };
-
+            pos = orto_projection(node.line[0], node.line[1], {x:x, y:y});
             // pos = {
             //   x : node.line[0].x + (node.line[1].x - node.line[0].x)/2,
             //   y : node.line[0].y + (node.line[1].y - node.line[0].y)/2
+            // };
+
+            // pos = {
+            //   x : x,
+            //   y : y
             // };
           }
 
@@ -414,7 +399,7 @@ return {
             .attr({
               'fill-opacity': 0.7,
               // 'stroke-opacity': 0.7,
-              'stroke-width': 6,
+              'stroke-width': line_padding*2,
               // 'stroke': _firstrun ? me.color : '#0F0'
               'fill': link.color || source.color,
               'stroke':'transparent'
@@ -454,7 +439,7 @@ return {
       function _animateRemove(svgElement, cb){
         var fx = svgElement
           .animate()
-          .attr({'stroke':'#F00', 'fill':'#F00', 'stroke-width':4})
+          .attr({'stroke':'#F00', 'fill':'#F00'})
           .delay(2000)
           .animate(700, '>')
           .attr({ 'stroke-opacity': 0.0 });
@@ -662,6 +647,38 @@ return {
         _svg._rotation = rotation;
 
         return css_translate(x1, y1)+css_rotate(rotation)+css_scale(factor);
+      }
+
+      // make point projection on the line
+      function orto_projection(lineP1, lineP2, point){
+            // a*x + b*y - c1 = 0 // line[0]
+            // b*x - a*y - c2 = 0 // cusror pos
+            var x0 = lineP1.x;
+            var y0 = lineP1.y;
+            var x1 = lineP2.x;
+            var y1 = lineP2.y;
+
+            var x3 = point.x;
+            var y3 = point.y;
+
+            var p = 2*x0*y0-x0*y1-x1*y0;
+
+            // var a1 = node.line[1].x - node.line[0].x;
+            // var b1 = node.line[1].y - node.line[0].y;
+            var a1 = (y0-y1)/p;
+            var b1 = (x1-x0)/p;
+            var b2 = a1;
+            var a2 = -b1;
+
+            var c1 = -(a1*x0 + b1*y0);
+            var c2 = -(a2*x3 + b2*y3);
+
+            var q = a1*b2-a2*b1;
+            // http://e-maxx.ru/algo/lines_intersection
+            return {
+              x : (b1*c2-b2*c1)/q,
+              y : (c1*a2-c2*a1)/q,
+            };
       }
 
     } // -controller
