@@ -395,16 +395,20 @@ return {
             return;
           }
 
+          // get target position
           var sp = {
             x: source.pos.x,
             y: source.pos.y,
           };
-          sp = css_get_position(source._svg.node);
           var tp = {
             x: target.pos.x,
             y: target.pos.y,
           };
-          tp = css_get_position(target._svg.node);
+
+          // get live position (a little but uglier that another variant)
+          // var sp = css_get_position(source._svg.node);
+          // var tp = css_get_position(target._svg.node);
+
 
           // me.loan[tid].svg = ctrl.svg.path(['M', me.pos.x, me.pos.y, 'L', target.pos.x, target.pos.y].join(' '))
           // link._svg = ctrl.svg.polyline([[sp.x, sp.y] /*, [targetCenter.pos.x, targetCenter.pos.y]*/, [tp.x, tp.y]])
@@ -591,7 +595,7 @@ return {
                 console.warn('Link "to" node not found:', link);
                 return;
               }
-              // TODO: get real nodes position
+              // get target nodes position
               var sp = {
                 x: source.pos.x,
                 y: source.pos.y,
