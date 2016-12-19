@@ -1,14 +1,46 @@
 // fix for IE
-// if(!Object.assign){
-//   Object.assign = function(a0, a1){
-//     for(var name in a1){
-//       if(a1.hasOwnProperty(name)){
-//         a0[name] = a1[name];
-//       }
-//     }
-//     return a0;
-//   }
-// }
+if(!Object.assign){
+  Object.assign = function(a0, a1){
+    for(var name in a1){
+      if(a1.hasOwnProperty(name)){
+        a0[name] = a1[name];
+      }
+    }
+    return a0;
+  }
+}
+
+/**
+ * detect IE
+ * returns version of IE or false, if browser is not Internet Explorer
+ */
+function detectIE() {
+    var ua = window.navigator.userAgent;
+
+    var msie = ua.indexOf('MSIE ');
+    if (msie > 0) {
+        // IE 10 or older => return version number
+        return parseInt(ua.substring(msie + 5, ua.indexOf('.', msie)), 10);
+    }
+
+    var trident = ua.indexOf('Trident/');
+    if (trident > 0) {
+        // IE 11 => return version number
+        var rv = ua.indexOf('rv:');
+        return parseInt(ua.substring(rv + 3, ua.indexOf('.', rv)), 10);
+    }
+
+    var edge = ua.indexOf('Edge/');
+    if (edge > 0) {
+       // Edge (IE 12+) => return version number
+       return parseInt(ua.substring(edge + 5, ua.indexOf('.', edge)), 10);
+    }
+
+    // other browser
+    return false;
+}
+
+
 
 var requestAnimationFrame = window.requestAnimationFrame ||
                     window.mozRequestAnimationFrame ||
@@ -71,6 +103,14 @@ return {
        * @type {bolean}
        */
       var _firstrun = true;
+
+
+      /**
+       * Legacy mode use animation, based on changing DOM attributes.
+       * Modern mode (legacy==false) use animation, based on css3 properties
+       * @type {bolean}
+       */
+      var legacyMode = detectIE();
 
       /**
        * Link to main svg object
@@ -289,7 +329,7 @@ return {
         Object.keys(ctrl.nodes).forEach(function(id){
           if(!ctrl.nodes[id]._svg){
             // seems like it's a new element
-            createNode(ctrl.nodes[id]);
+            legacyMode ? createNode_old(ctrl.nodes[id]) : createNode(ctrl.nodes[id]);
           }
         });
 
@@ -306,7 +346,7 @@ return {
 
         // links
         diffLinks.add.forEach(function(link){
-          createLink( link );
+          legacyMode ? createLink_old( link ) : createLink( link );
         });
         diffLinks.remove.forEach(function(link){
           removeLink(link);
@@ -441,12 +481,12 @@ return {
 
           var nodesCount = Object.keys(ctrl.nodes).length;
           Object.keys(ctrl.nodes).forEach(function(id, i){
-            updateNode( ctrl.nodes[id], i, nodesCount);
+            legacyMode ? updateNode_old( ctrl.nodes[id], i, nodesCount) : updateNode( ctrl.nodes[id], i, nodesCount);
           });
 
           // links
           ctrl.links.forEach(function(link){
-            updateLink(link);
+            legacyMode ? updateLink_old(link) : updateLink(link);
           });
 
           _firstrun = false;
@@ -483,7 +523,8 @@ return {
             'fill': me.color,
             style: css_style({
               transform: css_translate(me.pos.x, me.pos.y),
-              transition: 'all linear '+animation_time
+              transition: 'all linear '+animation_time,
+              '-ms-transform' : 'all linear '+animation_time
             })
           })
           //.move(me.pos.x-item_r0, me.pos.y-item_r0);
@@ -493,6 +534,39 @@ return {
             r:item_r
           })
           // .move(me.pos.x-item_r, me.pos.y-item_r);
+
+        // link back to object
+        me._svg.node._svg_original = me;
+      }
+
+      /**
+       * use js animation instead of css
+       */
+      function createNode_old(node){
+        console.log('createNode_old', node);
+
+        // body
+        var me = node;
+        // me.pos = polarEntry();
+        var ids = Object.keys(ctrl.nodes);
+        me.pos = polar(ids.indexOf(""+node.id), ids.length);
+
+        // me.color = randomColor();
+        me._svg = ctrl.svg.circle(2*item_r0).attr({
+            'class':'r-node',
+
+            'stroke-width': 1, //item_border_w,
+            // 'stroke':'#F33'
+            'stroke': me.color,
+            'fill': me.color
+          })
+          .move(me.pos.x-item_r0, me.pos.y-item_r0);
+
+        me._svg.animate(300, '<')
+          .attr({
+            r:item_r
+          })
+          .move(me.pos.x-item_r, me.pos.y-item_r);
 
         // link back to object
         me._svg.node._svg_original = me;
@@ -528,6 +602,25 @@ return {
         }
       }
 
+
+      /**
+       * use js animation instead of css
+       */
+      function updateNode_old(node, _index, _total){
+        var me = node;
+        // _index = Object.keys(ctrl.nodes).indexOf(""+node.id)
+        // _total = Object.keys(ctrl.nodes).length;
+        me.pos = polar(_index, _total);
+        me._svg.animate().move(me.pos.x-item_r, me.pos.y-item_r);
+
+        // filter
+        if($scope.filter!==null && $scope.filter!==undefined && $scope.filter !== id){
+          me._svg.hide();
+        }else{
+          me._svg.show();
+        }
+      }
+
       /**
        *
        */
@@ -542,7 +635,6 @@ return {
       function createLink(link){
           console.log('createLink', link);
 
-          // TODO: get real nodes position
           var source = ctrl.nodes[link.from] /*|| targetCenter*/;
           if(!source){
             console.warn('Link "from" node not found:', link);
@@ -569,17 +661,10 @@ return {
           // var tp = css_get_position(target._svg.node);
 
 
-          // me.loan[tid].svg = ctrl.svg.path(['M', me.pos.x, me.pos.y, 'L', target.pos.x, target.pos.y].join(' '))
-          // link._svg = ctrl.svg.polyline([[sp.x, sp.y] /*, [targetCenter.pos.x, targetCenter.pos.y]*/, [tp.x, tp.y]])
-
-          // link._svg = ctrl.svg.line(sp.x, sp.y, tp.x, tp.y)
-
           // we use css transitions to place this lineproperly
           // link._svg = ctrl.svg.line(0,0, bgnd_c_radius, 0)
           link._svg = ctrl.svg.rect(bgnd_c_radius, line_width)
             .back()
-            // .backward()
-            // .after( $element.children('circle:last').get(0) )
             .attr({
               'fill-opacity': 0.7,
               // 'stroke-opacity': 0.7,
@@ -596,15 +681,63 @@ return {
                 'transform-origin': '0 0'
               })
             });
-            // if(!_firstrun){
-            //   me.loan[to].svg.animate().attr({'stroke': me.color});
-            // }
+
+          ctrl._svg.back();
+          link.line = [sp, tp];
+
+          // link back to object
+          link._svg.node._svg_original = link;
+      }
+
+
+      /**
+       * add svg link figure
+       * use js animation instead of css
+       */
+      function createLink_old(link){
+          console.log('createLink_old', link);
+
+          var source = ctrl.nodes[link.from] /*|| targetCenter*/;
+          if(!source){
+            console.warn('Link "from" node not found:', link);
+            return;
+          }
+          var target = ctrl.nodes[link.to] /*|| targetCenter*/;
+          if(!target){
+            console.warn('Link "to" node not found:', link);
+            return;
+          }
+
+          // get target position
+          var sp = {
+            x: source.pos.x,
+            y: source.pos.y,
+          };
+          var tp = {
+            x: target.pos.x,
+            y: target.pos.y,
+          };
+
+          // get live position (a little but uglier that another variant)
+          // var sp = css_get_position(source._svg.node);
+          // var tp = css_get_position(target._svg.node);
+
+          link._svg = ctrl.svg.line(sp.x, sp.y, tp.x, tp.y)
+            .back()
+            // .backward()
+            // .after( $element.children('circle:last').get(0) )
+            .attr({
+              'fill-opacity': 0.7,
+              // 'stroke-opacity': 0.7,
+              'stroke-width': line_padding*2,
+              // 'stroke': _firstrun ? me.color : '#0F0'
+              // 'fill': link.color || source.color,
+              'stroke': link.color || source.color
+            });
 
           ctrl._svg.back();
 
-
           link.line = [sp, tp];
-          // setTimeout(removeLink.bind(this, from, to), 2000); // DEBUG
 
           // link back to object
           link._svg.node._svg_original = link;
@@ -655,6 +788,55 @@ return {
              'transform-origin': '0 0'
             })
           });
+
+          // filter
+          if($scope.filter!==null && $scope.filter!==undefined && $scope.filter !== id && ( tid!==$scope.filter || $scope.filterDirection!=="two") ){
+            link._svg.hide();
+          }else{
+            link._svg.show();
+            target._svg.show();
+          }
+      }
+
+      /**
+       *
+       */
+      function updateLink_old(link){
+          var source = ctrl.nodes[link.from] /*|| targetCenter*/;
+          if(!source){
+            console.warn('Link "from" node not found:', link);
+            return;
+          }
+          var target = ctrl.nodes[link.to] /*|| targetCenter*/;
+          if(!target){
+            console.warn('Link "to" node not found:', link);
+            return;
+          }
+          // get target nodes position
+          var sp = {
+            x: source.pos.x,
+            y: source.pos.y,
+          };
+          var tp = {
+            x: target.pos.x,
+            y: target.pos.y,
+          };
+          link.line = [sp, tp];
+
+          if(!link._svg) {
+            console.warn(' "svg" not created', link);
+            return;
+          }
+
+          // if(isAnimated){
+          link._svg.animate().plot([[sp.x, sp.y] /*, [targetCenter.pos.x, targetCenter.pos.y]*/ , [tp.x, tp.y]]);
+          //   // link._svg.animate().plot(['M', sp.x, sp.y, 'L', target.pos.x, target.pos.y].join(' '));
+
+          // }else{
+          //   link._svg.plot([[sp.x, sp.y] /*, [targetCenter.pos.x, targetCenter.pos.y]*/ , [tp.x, tp.y]]);
+          //   // link._svg.plot(['M', sp.x, sp.y, 'L', target.pos.x, target.pos.y].join(' '));
+          // }
+
 
           // filter
           if($scope.filter!==null && $scope.filter!==undefined && $scope.filter !== id && ( tid!==$scope.filter || $scope.filterDirection!=="two") ){
