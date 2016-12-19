@@ -123,6 +123,17 @@ return {
 
 
       /**
+       * @param {LinkInfo} link
+       * @param {Object<Object<LinkInfo>>} indexObj
+       */
+      function _addToIndex(link, indexObj){
+        indexObj[link.from] = indexObj[link.from] || {};
+        indexObj[link.from][link.to] = indexObj[link.from][link.to] || link;
+      }
+
+
+
+      /**
        *
        */
       function init(){
@@ -162,60 +173,6 @@ return {
         }
       }
 
-      /**
-       * @param {SVG} node
-       */
-      function showTooltip(node, x, y){
-          console.log('showTooltip', node);
-          var text='';
-          var pos=null;
-
-          if(typeof node.id !== "undefined"){
-            // this is node, not a link
-            var outCount = Object.keys(ctrl._linksIndex[node.id]||[]).length;
-            var inCount = (ctrl.links||[]).reduce(function(sum, c){
-              return sum + (c.to == node.id ? 1 : 0);
-            }, 0);
-
-            text = 'ID:&nbsp;' + node.id
-                 // + '<br>Value:&nbsp;'+node.value
-                 + '<br>' + 'Links outbound:&nbsp;' + outCount
-                 + '<br>' + 'Links inbound:&nbsp;' + inCount ;
-
-            pos = {
-              x : node.pos.x,
-              y : node.pos.y-item_r
-            };
-
-          }else{
-            // assume it's a link
-            text = 'From&nbsp;{from}&nbsp;to&nbsp;{to}'.replace('{from}', node.from).replace('{to}', node.to)
-                 + '<br>Value:&nbsp;' + (node.value || 'N/A');
-
-            // pos = orto_projection(node.line[0], node.line[1], {x:x, y:y});
-            pos = {
-              x : node.line[0].x + (node.line[1].x - node.line[0].x)/2,
-              y : node.line[0].y + (node.line[1].y - node.line[0].y)/2
-            };
-
-            // pos = {
-            //   x : x,
-            //   y : y
-            // };
-          }
-
-          $element.find('.bc_popup_anchor').css({height:0, width:0, position:'absolute', left: pos.x, top: pos.y })
-          // .tooltip('destroy')
-            .tooltip({title:text, html:true, animation:false}).tooltip('show');
-          // $('svg circle:first').tooltip({title:'test'}).tooltip('show')
-      }
-
-      /**
-       * @param {SVG} node (unused)
-       */
-      function hideTooltip(/*node*/){
-        $element.find('.bc_popup_anchor').tooltip('destroy');
-      }
 
       // /**
       //  *
@@ -359,14 +316,64 @@ return {
         requestAnimationFrame(_update);
       });
 
+
+
       /**
-       * @param {LinkInfo} link
-       * @param {Object<Object<LinkInfo>>} indexObj
+       * @param {SVG} node
        */
-      function _addToIndex(link, indexObj){
-        indexObj[link.from] = indexObj[link.from] || {};
-        indexObj[link.from][link.to] = indexObj[link.from][link.to] || link;
+      function showTooltip(node, x, y){
+          console.log('showTooltip', node);
+          var text='';
+          var pos=null;
+
+          if(typeof node.id !== "undefined"){
+            // this is node, not a link
+            var outCount = Object.keys(ctrl._linksIndex[node.id]||[]).length;
+            var inCount = (ctrl.links||[]).reduce(function(sum, c){
+              return sum + (c.to == node.id ? 1 : 0);
+            }, 0);
+
+            text = 'ID:&nbsp;' + node.id
+                 // + '<br>Value:&nbsp;'+node.value
+                 + '<br>' + 'Links outbound:&nbsp;' + outCount
+                 + '<br>' + 'Links inbound:&nbsp;' + inCount ;
+
+            pos = {
+              x : node.pos.x,
+              y : node.pos.y-item_r
+            };
+
+          }else{
+            // assume it's a link
+            text = 'From&nbsp;{from}&nbsp;to&nbsp;{to}'.replace('{from}', node.from).replace('{to}', node.to)
+                 + '<br>Label:&nbsp;' + (node.value || 'N/A');
+
+            // pos = orto_projection(node.line[0], node.line[1], {x:x, y:y});
+            pos = {
+              x : node.line[0].x + (node.line[1].x - node.line[0].x)/2,
+              y : node.line[0].y + (node.line[1].y - node.line[0].y)/2
+            };
+
+            // pos = {
+            //   x : x,
+            //   y : y
+            // };
+          }
+
+          $element.find('.bc_popup_anchor').css({height:0, width:0, position:'absolute', left: pos.x, top: pos.y })
+          // .tooltip('destroy')
+            .tooltip({title:text, html:true, animation:false}).tooltip('show');
+          // $('svg circle:first').tooltip({title:'test'}).tooltip('show')
       }
+
+      /**
+       * @param {SVG} node (unused)
+       */
+      function hideTooltip(/*node*/){
+        $element.find('.bc_popup_anchor').tooltip('destroy');
+      }
+
+
 
 
       /**
@@ -378,6 +385,154 @@ return {
               add: to.filter(function(item){ return from.indexOf(item)<0; }),
               remove:  from.filter(function(item){ return to.indexOf(item)<0; })
           };
+      }
+
+
+      function _animateRemove(svgElement, cb){
+        var fx = svgElement
+          .animate()
+          .attr({'stroke':'#F00', 'fill':'#F00'})
+          .delay(2000)
+          .animate(700, '>')
+          .attr({ 'stroke-opacity': 0.0 });
+
+        if( svgElement instanceof SVG.Circle){
+          fx = fx.attr({r:item_r0});
+        }
+        fx.after(function(){
+          svgElement.remove();
+          cb && cb();
+        });
+      }
+
+
+      /**
+       *
+       */
+      function polar(i, n){
+        var a;
+        if(n<=1){
+          a = 0;
+        }else{
+          a = 2*Math.PI*i/n + Math.PI/2;
+        }
+
+        return {
+          x : bgnd_c_center + bgnd_c_radius * Math.sin(a),
+          y : bgnd_c_center - bgnd_c_radius * Math.cos(a)
+        };
+      }
+
+
+
+
+      var targetCenter = {pos:{x:bgnd_c_center, y:bgnd_c_center}};
+
+
+
+      // recalculate elements position
+      function _update(isAnimated){
+          console.log('_update');
+          console.dir(ctrl);
+
+          if(typeof isAnimated === 'undefined'){
+            isAnimated = !_firstrun;
+          }
+
+          var nodesCount = Object.keys(ctrl.nodes).length;
+          Object.keys(ctrl.nodes).forEach(function(id, i){
+            updateNode( ctrl.nodes[id], i, nodesCount);
+          });
+
+          // links
+          ctrl.links.forEach(function(link){
+            updateLink(link);
+          });
+
+          _firstrun = false;
+      }
+
+
+
+      /**
+       * svg operations
+       */
+
+
+
+
+      /**
+       *
+       */
+      function createNode(node){
+        console.log('createNode', node);
+
+        // body
+        var me = node;
+        // me.pos = polarEntry();
+        var ids = Object.keys(ctrl.nodes);
+        me.pos = polar(ids.indexOf(""+node.id), ids.length);
+
+        // me.color = randomColor();
+        me._svg = ctrl.svg.circle(2*item_r0).attr({
+            'class':'r-node',
+
+            'stroke-width': 1, //item_border_w,
+            // 'stroke':'#F33'
+            'stroke': me.color,
+            'fill': me.color,
+            style: css_style({
+              transform: css_translate(me.pos.x, me.pos.y),
+              transition: 'all linear '+animation_time
+            })
+          })
+          //.move(me.pos.x-item_r0, me.pos.y-item_r0);
+
+        me._svg.animate(300, '<')
+          .attr({
+            r:item_r
+          })
+          // .move(me.pos.x-item_r, me.pos.y-item_r);
+
+        // link back to object
+        me._svg.node._svg_original = me;
+      }
+
+      /**
+       *
+       */
+      function updateNode(node, _index, _total){
+        var me = node;
+        // _index = Object.keys(ctrl.nodes).indexOf(""+node.id)
+        // _total = Object.keys(ctrl.nodes).length;
+        me.pos = polar(_index, _total);
+        // body
+        // if(isAnimated){
+        //   ctrl.nodes[id]._svg.animate().move(me.pos.x-item_r, me.pos.y-item_r);
+        // }else{
+        //   ctrl.nodes[id]._svg.move(me.pos.x-item_r, me.pos.y-item_r);
+        // }
+
+        me._svg.attr({
+          style: css_style({
+            transform: css_translate(me.pos.x, me.pos.y),
+            transition: 'all linear '+animation_time
+          })
+        });
+
+        // filter
+        if($scope.filter!==null && $scope.filter!==undefined && $scope.filter !== id){
+          me._svg.hide();
+        }else{
+          me._svg.show();
+        }
+      }
+
+      /**
+       *
+       */
+      function removeNode(node){
+        _animateRemove(node._svg);
       }
 
 
@@ -455,6 +610,61 @@ return {
           link._svg.node._svg_original = link;
       }
 
+      /**
+       *
+       */
+      function updateLink(link){
+          var source = ctrl.nodes[link.from] /*|| targetCenter*/;
+          if(!source){
+            console.warn('Link "from" node not found:', link);
+            return;
+          }
+          var target = ctrl.nodes[link.to] /*|| targetCenter*/;
+          if(!target){
+            console.warn('Link "to" node not found:', link);
+            return;
+          }
+          // get target nodes position
+          var sp = {
+            x: source.pos.x,
+            y: source.pos.y,
+          };
+          var tp = {
+            x: target.pos.x,
+            y: target.pos.y,
+          };
+          link.line = [sp, tp];
+
+          if(!link._svg) {
+            console.warn(' "svg" not created', link);
+            return;
+          }
+          // if(isAnimated){
+          //   link._svg.animate().plot([[sp.x, sp.y] /*, [targetCenter.pos.x, targetCenter.pos.y]*/ , [tp.x, tp.y]]);
+          //   // link._svg.animate().plot(['M', sp.x, sp.y, 'L', target.pos.x, target.pos.y].join(' '));
+
+          // }else{
+          //   link._svg.plot([[sp.x, sp.y] /*, [targetCenter.pos.x, targetCenter.pos.y]*/ , [tp.x, tp.y]]);
+          //   // link._svg.plot(['M', sp.x, sp.y, 'L', target.pos.x, target.pos.y].join(' '));
+          // }
+          link._svg.attr({
+            style: css_style({
+              transform: myline(sp.x, sp.y, tp.x, tp.y, link._svg),
+              transition: 'all linear '+animation_time,
+             // 'transform-origin': 'left center'
+             'transform-origin': '0 0'
+            })
+          });
+
+          // filter
+          if($scope.filter!==null && $scope.filter!==undefined && $scope.filter !== id && ( tid!==$scope.filter || $scope.filterDirection!=="two") ){
+            link._svg.hide();
+          }else{
+            link._svg.show();
+            target._svg.show();
+          }
+      }
+
 
       /**
        *
@@ -465,185 +675,14 @@ return {
       }
 
 
-      function _animateRemove(svgElement, cb){
-        var fx = svgElement
-          .animate()
-          .attr({'stroke':'#F00', 'fill':'#F00'})
-          .delay(2000)
-          .animate(700, '>')
-          .attr({ 'stroke-opacity': 0.0 });
-
-        if( svgElement instanceof SVG.Circle){
-          fx = fx.attr({r:item_r0});
-        }
-        fx.after(function(){
-          svgElement.remove();
-          cb && cb();
-        });
-      }
-
-
-      /**
-       *
-       */
-      function polar(i, n){
-        var a;
-        if(n<=1){
-          a = 0;
-        }else{
-          a = 2*Math.PI*i/n + Math.PI/2;
-        }
-
-        return {
-          x : bgnd_c_center + bgnd_c_radius * Math.sin(a),
-          y : bgnd_c_center - bgnd_c_radius * Math.cos(a)
-        };
-      }
 
 
 
-
-      var targetCenter = {pos:{x:bgnd_c_center, y:bgnd_c_center}};
 
 
       /**
-       *
+       * css tricks
        */
-      function createNode(node){
-        console.log('createNode', node);
-
-
-        // body
-        var me = node;
-        // me.pos = polarEntry();
-        var ids = Object.keys(ctrl.nodes);
-        me.pos = polar(ids.indexOf(""+node.id), ids.length);
-
-        // me.color = randomColor();
-        me._svg = ctrl.svg.circle(2*item_r0).attr({
-            'stroke-width': 1, //item_border_w,
-            // 'stroke':'#F33'
-            'stroke': me.color,
-            'fill': me.color,
-            style: css_style({
-              transform: css_translate(me.pos.x, me.pos.y),
-              transition: 'all linear '+animation_time
-            })
-          })
-          //.move(me.pos.x-item_r0, me.pos.y-item_r0);
-
-        me._svg.animate(300, '<')
-          .attr({
-            r:item_r
-          })
-          // .move(me.pos.x-item_r, me.pos.y-item_r);
-
-        // link back to object
-        me._svg.node._svg_original = me;
-
-      }
-
-      /**
-       *
-       */
-      function removeNode(node){
-        _animateRemove(node._svg);
-      }
-
-
-      // recalculate elements position
-      function _update(isAnimated){
-          console.log('_update');
-          console.dir(ctrl);
-
-          if(typeof isAnimated === 'undefined'){
-            isAnimated = !_firstrun;
-          }
-
-          var nodesCount = Object.keys(ctrl.nodes).length;
-          Object.keys(ctrl.nodes).forEach(function(id, i){
-            var me = ctrl.nodes[id];
-            me.pos = polar(i, nodesCount);
-
-            // body
-            // if(isAnimated){
-            //   ctrl.nodes[id]._svg.animate().move(me.pos.x-item_r, me.pos.y-item_r);
-            // }else{
-            //   ctrl.nodes[id]._svg.move(me.pos.x-item_r, me.pos.y-item_r);
-            // }
-
-            me._svg.attr({
-              style: css_style({
-                transform: css_translate(me.pos.x, me.pos.y),
-                transition: 'all linear '+animation_time
-              })
-            });
-
-            // filter
-            if($scope.filter!==null && $scope.filter!==undefined && $scope.filter !== id){
-              me._svg.hide();
-            }else{
-              me._svg.show();
-            }
-
-          });
-
-          // links
-          ctrl.links.forEach(function(link, i){
-              var source = ctrl.nodes[link.from] /*|| targetCenter*/;
-              if(!source){
-                console.warn('Link "from" node not found:', link);
-                return;
-              }
-              var target = ctrl.nodes[link.to] /*|| targetCenter*/;
-              if(!target){
-                console.warn('Link "to" node not found:', link);
-                return;
-              }
-              // get target nodes position
-              var sp = {
-                x: source.pos.x,
-                y: source.pos.y,
-              };
-              var tp = {
-                x: target.pos.x,
-                y: target.pos.y,
-              };
-              link.line = [sp, tp];
-
-              if(!link._svg) {
-                console.warn(' "svg" not created', link);
-                return;
-              }
-              // if(isAnimated){
-              //   link._svg.animate().plot([[sp.x, sp.y] /*, [targetCenter.pos.x, targetCenter.pos.y]*/ , [tp.x, tp.y]]);
-              //   // link._svg.animate().plot(['M', sp.x, sp.y, 'L', target.pos.x, target.pos.y].join(' '));
-
-              // }else{
-              //   link._svg.plot([[sp.x, sp.y] /*, [targetCenter.pos.x, targetCenter.pos.y]*/ , [tp.x, tp.y]]);
-              //   // link._svg.plot(['M', sp.x, sp.y, 'L', target.pos.x, target.pos.y].join(' '));
-              // }
-              link._svg.attr({
-                style: css_style({
-                  transform: myline(sp.x, sp.y, tp.x, tp.y, link._svg),
-                  transition: 'all linear '+animation_time,
-                 // 'transform-origin': 'left center'
-                 'transform-origin': '0 0'
-                })
-              });
-
-              // filter
-              if($scope.filter!==null && $scope.filter!==undefined && $scope.filter !== id && ( tid!==$scope.filter || $scope.filterDirection!=="two") ){
-                link._svg.hide();
-              }else{
-                link._svg.show();
-                target._svg.show();
-              }
-          });
-
-          _firstrun = false;
-      }
-
 
       function css_translate(x, y){
         return 'translate(%s, %s) '.replace('%s', x+'px').replace('%s', y+'px');
@@ -652,7 +691,7 @@ return {
         return 'scaleX(%s) '.replace('%s', factor);
       }
       function css_rotate(rad){
-        // transform-origin works wrong in FF, so we use combination of this
+        // transform-origin works wrong in FF, so we use combination of this properties
         var dy = line_padding + line_width/2;
 
         return 'rotate(%srad) '.replace('%s', rad)
