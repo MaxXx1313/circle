@@ -94,8 +94,9 @@
          * @more https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math/random
          */
         function randomNode(){
-          var from = parseInt(Math.random()*10);
-          var to = parseInt(Math.random()*(10-1));
+          var maxNodes = 10-1;
+          var from = parseInt(Math.random()*maxNodes);
+          var to = parseInt(Math.random()*(maxNodes-1));
           if(to>=from) to++; // this will make "to" and "from" different
           var value = parseInt(Math.random()*500);
 

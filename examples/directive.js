@@ -147,7 +147,7 @@ return {
           // show tooltip on hover
 
           $element.on('mouseover', function(e){
-            console.log('mouseover', e.target, e);
+            // console.log('mouseover', e.target, e);
             if(e.target._svg_original){
               showTooltip(e.target._svg_original, e.offsetX, e.offsetY);
             }
@@ -233,7 +233,7 @@ return {
       $scope.$watchCollection('data', function(){
         var links = $scope.data || [];
         console.log('$scope.data');
-        console.dir(links);
+        // console.dir(links);
 
 
         // validate
@@ -283,7 +283,6 @@ return {
             // just sum up values
             duplicationlinkItem.value = (duplicationlinkItem.value || 0) + (link.value || 0);
             return;
-
           }
 
           // check for opposite directed link
@@ -304,6 +303,11 @@ return {
               if(idx>=0){
                 newLinks.splice(idx, 1);
               }
+            }else{
+              // duplicated reversion link
+              // just sum up values
+              reverselinkItem.value = (reverselinkItem.value || 0) + (link.value || 0);
+              return;
             }
           }
 
@@ -551,6 +555,7 @@ return {
       function _update(isAnimated){
           console.log('_update');
           console.dir(ctrl);
+
           if(typeof isAnimated === 'undefined'){
             isAnimated = !_firstrun;
           }
