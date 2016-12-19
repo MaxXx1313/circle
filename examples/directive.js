@@ -147,6 +147,7 @@ return {
       function showTooltip(node, x, y){
           console.log('showTooltip', node);
           var text='';
+          var pos=null;
 
           if(typeof node.id !== "undefined"){
             // this is node, not a link
@@ -159,13 +160,47 @@ return {
                  // + '<br>Value:&nbsp;'+node.value
                  + '<br>' + 'Links outbound:&nbsp;' + outCount
                  + '<br>' + 'Links inbound:&nbsp;' + inCount ;
+
+            pos = {
+              x : node.pos.x,
+              y : node.pos.y-item_r
+            };
+
           }else{
             // assume it's a link
             text = 'From&nbsp;{from}&nbsp;to&nbsp;{to}'.replace('{from}', node.from).replace('{to}', node.to)
                  + '<br>Value:&nbsp;' + (node.value || 'N/A');
+
+            // a*x + b*y - c1 = 0 // line[0]
+            // b*x - a*y - c2 = 0 // cusror pos
+            var x0 = node.line[0].x;
+            var y0 = node.line[0].y;
+            var x1 = node.line[1].x;
+            var y1 = node.line[1].y;
+
+            var p = 2*x0*y0-x0*y1-x1*y0;
+
+            // var a1 = node.line[1].x - node.line[0].x;
+            // var b1 = node.line[1].y - node.line[0].y;
+            var a1 = (y0-y1)/p;
+            var b1 = -(x0-x1)/p;
+            var b2 = a1;
+            var a2 = -b1;
+
+            var c1 = -(a1*node.line[0].x + b1*node.line[0].y);
+            var c2 = -(a2*x + b2*y);
+            pos = {
+              x : (b1*c2-b2*c1)/(a1*b2-a2*b1),
+              y : (c1*a2-c2*a1)/(a1*b2-a2*b1),
+            };
+
+            // pos = {
+            //   x : node.line[0].x + (node.line[1].x - node.line[0].x)/2,
+            //   y : node.line[0].y + (node.line[1].y - node.line[0].y)/2
+            // };
           }
 
-          $element.find('.bc_popup_anchor').css({height:0, width:0, position:'absolute', left: x || node.pos.x, top: (y || node.pos.y)-item_r })
+          $element.find('.bc_popup_anchor').css({height:0, width:0, position:'absolute', left: pos.x, top: pos.y })
           // .tooltip('destroy')
             .tooltip({title:text, html:true, animation:false}).tooltip('show');
           // $('svg circle:first').tooltip({title:'test'}).tooltip('show')
@@ -368,25 +403,28 @@ return {
           // me.loan[tid].svg = ctrl.svg.path(['M', me.pos.x, me.pos.y, 'L', target.pos.x, target.pos.y].join(' '))
           // link._svg = ctrl.svg.polyline([[sp.x, sp.y] /*, [targetCenter.pos.x, targetCenter.pos.y]*/, [tp.x, tp.y]])
 
-          // we use css transitions to place this lineproperly
-          link._svg = ctrl.svg.line(0,0, bgnd_c_radius, 0)
-          // link._svg = ctrl.svg.rect(bgnd_c_radius, 5)
           // link._svg = ctrl.svg.line(sp.x, sp.y, tp.x, tp.y)
+
+          // we use css transitions to place this lineproperly
+          // link._svg = ctrl.svg.line(0,0, bgnd_c_radius, 0)
+          link._svg = ctrl.svg.rect(bgnd_c_radius, 5)
             .back()
             // .backward()
             // .after( $element.children('circle:last').get(0) )
             .attr({
-              // 'fill-opacity': 0.2,
-              'stroke-opacity': 0.7,
-              'stroke-width': 3,
+              'fill-opacity': 0.7,
+              // 'stroke-opacity': 0.7,
+              'stroke-width': 6,
               // 'stroke': _firstrun ? me.color : '#0F0'
-              'stroke': link.color || source.color
+              'fill': link.color || source.color,
+              'stroke':'transparent'
             });
           link._svg._rotation = 0;
           link._svg.attr({
               style: css_style({
                 transform: myline(sp.x, sp.y, tp.x, tp.y, link._svg),
-                transition: 'all linear 1s'
+                transition: 'all linear 1s',
+                'transform-origin': 'left center'
               })
             });
             // if(!_firstrun){
@@ -394,6 +432,9 @@ return {
             // }
 
           ctrl._svg.back();
+
+
+          link.line = [sp, tp];
           // setTimeout(removeLink.bind(this, from, to), 2000); // DEBUG
 
           // link back to object
@@ -554,6 +595,7 @@ return {
                 x: target.pos.x,
                 y: target.pos.y,
               };
+              link.line = [sp, tp];
 
               if(!link._svg) {
                 console.warn(' "svg" not created', link);
@@ -570,7 +612,8 @@ return {
               link._svg.attr({
                 style: css_style({
                   transform: myline(sp.x, sp.y, tp.x, tp.y, link._svg),
-                  transition: 'all linear 1s'
+                  transition: 'all linear 1s',
+                 'transform-origin': 'left center'
                 })
               });
 
