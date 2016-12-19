@@ -10,6 +10,11 @@
 //   }
 // }
 
+var requestAnimationFrame = window.requestAnimationFrame ||
+                    window.mozRequestAnimationFrame ||
+                    window.webkitRequestAnimationFrame ||
+                    window.msRequestAnimationFrame;
+
 angular.module('relationCircle', [])
 
 // scope:
@@ -57,6 +62,7 @@ return {
 
       var line_padding = 2;
       var line_width = 5;
+      var animation_time = '1s';
 
       var bgnd_c_center = parseInt(size/2);
       var bgnd_c_radius = parseInt(bgnd_c_center-4*item_r); // '4' - some experimental value =)
@@ -345,8 +351,8 @@ return {
           removeLink(link);
         });
 
-        _update();
-
+        // _update();
+        requestAnimationFrame(_update);
       });
 
       /**
@@ -393,10 +399,12 @@ return {
             x: source.pos.x,
             y: source.pos.y,
           };
+          sp = css_get_position(source._svg.node);
           var tp = {
             x: target.pos.x,
             y: target.pos.y,
           };
+          tp = css_get_position(target._svg.node);
 
           // me.loan[tid].svg = ctrl.svg.path(['M', me.pos.x, me.pos.y, 'L', target.pos.x, target.pos.y].join(' '))
           // link._svg = ctrl.svg.polyline([[sp.x, sp.y] /*, [targetCenter.pos.x, targetCenter.pos.y]*/, [tp.x, tp.y]])
@@ -417,11 +425,10 @@ return {
               'fill': link.color || source.color,
               'stroke':'transparent'
             });
-          link._svg._rotation = 0;
           link._svg.attr({
               style: css_style({
                 transform: myline(sp.x, sp.y, tp.x, tp.y, link._svg),
-                transition: 'all linear 1s',
+                transition: 'all linear '+animation_time,
                 // 'transform-origin': 'left center'
                 'transform-origin': '0 0'
               })
@@ -512,7 +519,7 @@ return {
             'fill': me.color,
             style: css_style({
               transform: css_translate(me.pos.x, me.pos.y),
-              transition: 'all linear 1s'
+              transition: 'all linear '+animation_time
             })
           })
           //.move(me.pos.x-item_r0, me.pos.y-item_r0);
@@ -559,7 +566,7 @@ return {
             me._svg.attr({
               style: css_style({
                 transform: css_translate(me.pos.x, me.pos.y),
-                transition: 'all linear 1s'
+                transition: 'all linear '+animation_time
               })
             });
 
@@ -584,7 +591,6 @@ return {
                 console.warn('Link "to" node not found:', link);
                 return;
               }
-
               // TODO: get real nodes position
               var sp = {
                 x: source.pos.x,
@@ -611,7 +617,7 @@ return {
               link._svg.attr({
                 style: css_style({
                   transform: myline(sp.x, sp.y, tp.x, tp.y, link._svg),
-                  transition: 'all linear 1s',
+                  transition: 'all linear '+animation_time,
                  // 'transform-origin': 'left center'
                  'transform-origin': '0 0'
                 })
@@ -644,6 +650,17 @@ return {
           + css_translate(0, -dy/2); // it's empirical division by 2
       }
 
+      function css_get_position(element){
+
+          // compiledTransform = 'matrix(1, 0, 0, 1, 155, 85.4552)'
+          var compiledTransform = getComputedStyle(element).transform || '';
+          // console.log('compiledTransform', compiledTransform);
+          var m = compiledTransform.match(/[\w]+\((.*)\)/);
+          var matrix = (m && m[1] || []).split(',').map(function(a){return parseInt(a)});
+          console.log({x:matrix[4], y:matrix[5]});
+          return {x:matrix[4], y:matrix[5]};
+      }
+
       function css_style(obj){
         return Object.keys(obj).reduce(function(res, name){
           return res+name+':'+obj[name]+';';
@@ -656,6 +673,9 @@ return {
         var factor = Math.sqrt(len2/etalon);
 
         // prevent overloop rotations
+        if(typeof _svg._rotation === "undefined"){
+          _svg._rotation = Math.atan2(y2-y1, x2-x1);
+        }
         var rotation = Math.atan2(y2-y1, x2-x1);
         if(rotation - _svg._rotation > Math.PI){
           rotation -= 2*Math.PI;
