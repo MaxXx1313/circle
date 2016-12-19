@@ -421,8 +421,9 @@ return {
           link._svg.attr({
               style: css_style({
                 transform: myline(sp.x, sp.y, tp.x, tp.y, link._svg),
-                transition: 'all linear 1s'
+                transition: 'all linear 1s',
                 // 'transform-origin': 'left center'
+                'transform-origin': '0 0'
               })
             });
             // if(!_firstrun){
@@ -610,8 +611,9 @@ return {
               link._svg.attr({
                 style: css_style({
                   transform: myline(sp.x, sp.y, tp.x, tp.y, link._svg),
-                  transition: 'all linear 1s'
+                  transition: 'all linear 1s',
                  // 'transform-origin': 'left center'
+                 'transform-origin': '0 0'
                 })
               });
 
@@ -635,7 +637,11 @@ return {
         return 'scaleX(%s) '.replace('%s', factor);
       }
       function css_rotate(rad){
-        return 'rotate(%srad) '.replace('%s', rad);
+        // transform-origin works wrong in FF, so we use combination of this
+        var dy = line_padding + line_width/2;
+
+        return 'rotate(%srad) '.replace('%s', rad)
+          + css_translate(0, -dy/2); // it's empirical division by 2
       }
 
       function css_style(obj){
